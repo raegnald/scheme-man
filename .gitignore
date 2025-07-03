@@ -1,4 +1,6 @@
+lib/*
+build/
+.cache/
 compile_flags.txt
-obj/
 *.exe
 *.app
