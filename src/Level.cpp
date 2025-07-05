@@ -1,5 +1,8 @@
 #include "Level.hpp"
+#include "LevelGeometry.hpp"
 #include <SFML/System.hpp>
+#include <SFML/System/Vector2.hpp>
+#include <cassert>
 #include <cstdio>
 #include <memory>
 #include <tmxlite/Map.hpp>
@@ -58,19 +61,32 @@ bool Level::load(void) {
 
   // Load level objects
   for (auto &layer : map.getLayers()) {
-    if (layer->getType() == tmx::Layer::Type::Object) {
-      const auto *objectGroup_layer =
-        dynamic_cast<const tmx::ObjectGroup *>(layer.get());
-      const auto &tmxObjects = objectGroup_layer->getObjects();
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Objects") {
+      const auto *tile_layer =
+        dynamic_cast<const tmx::TileLayer *>(layer.get());
+      const auto &object_tiles = tile_layer->getTiles();
+      const auto layer_size =
+        sf::Vector2u(tile_layer->getSize().x, tile_layer->getSize().y);
 
-      for (int i = 0; i < tmxObjects.size(); ++i) {
-        const tmx::Object &tmxObject = tmxObjects[i];
-        const auto pos =
-            sf::Vector2f(tmxObject.getPosition().x, tmxObject.getPosition().y);
+      assert(layer_size == geometry.dimensions);
 
-        if (tmxObject.getClass() == "coin") {
-          auto coin = std::make_unique<Coin>(pos, &geometry);
-          objects.push_back(std::move(coin));
+      for (int y = 0; y < layer_size.y; ++y) {
+        for (int x = 0; x < layer_size.x; ++x) {
+          Cannonical pos(x, y);
+          const auto &object_tile = object_tiles[x + y * layer_size.x];
+
+          // Coin
+          if (object_tile.ID == 24) {
+            auto coin = std::make_unique<Coin>(pos, &geometry);
+            objects.push_back(std::move(coin));
+          }
+
+          // Star
+          if (object_tile.ID == 11) {
+            auto coin = std::make_unique<Star>(pos, &geometry);
+            objects.push_back(std::move(coin));
+          }
         }
       }
     }
@@ -80,8 +96,9 @@ bool Level::load(void) {
 }
 
 void Level::update(void) {
+  player.update(player);
   for (auto &levelObject : objects) {
-    levelObject->update();
+    levelObject->update(player);
   }
 }
 
@@ -90,8 +107,10 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
   sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
 
   for (auto &layer : map.getLayers()) {
-    if (layer->getType() == tmx::Layer::Type::Tile) {
-      const auto *tile_layer = dynamic_cast<const tmx::TileLayer *>(layer.get());
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Floor") {
+      const auto *tile_layer =
+          dynamic_cast<const tmx::TileLayer *>(layer.get());
       const auto &tiles = tile_layer->getTiles();
       const auto layer_size = tile_layer->getSize();
       const auto tile_size = map.getTileSize();
@@ -121,4 +140,6 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
   for (const auto &levelObject : objects) {
     target.draw(*levelObject);
   }
+
+  target.draw(player);
 }

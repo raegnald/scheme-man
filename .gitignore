@@ -4,3 +4,5 @@ build/
 compile_flags.txt
 *.exe
 *.app
+.DS_Store
+.cache/

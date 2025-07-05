@@ -25,7 +25,9 @@ struct Level : public sf::Drawable {
   std::vector<sf::Texture> textures;
 
   std::vector<std::unique_ptr<LevelObject>> objects;
-  // Player player;
+  Player player{&geometry};
+
+  bool active = true;
 
   sf::Color background = sf::Color(0xd8, 0xeb, 0xf9);
 

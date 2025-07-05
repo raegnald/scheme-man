@@ -4,6 +4,8 @@
 #pragma once
 
 #include "LevelGeometry.hpp"
+#include "Interpolated.hpp"
+#include <SFML/Graphics/Rect.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
@@ -13,24 +15,24 @@
 #include <tmxlite/Object.hpp>
 #include <vector>
 
+struct Player;
+
 struct LevelObject : public sf::Drawable {
-  sf::Vector2f position; // not in isometric tile space
+  Interpolated<Cannonical> position{sf::Vector2f(0, 0)};
   LevelGeometry *geometry;
 
   LevelObject(void) {}
-  explicit LevelObject(sf::Vector2f t_position,
-                       LevelGeometry *t_geometry = nullptr)
-      : position(t_position), geometry(t_geometry) {}
+  explicit LevelObject(Cannonical t_position, LevelGeometry *t_geometry)
+    : position(t_position), geometry(t_geometry) {}
 
-  virtual void update(void) {}
+  void setPosition(Cannonical p) { position.start = p; }
+
+  virtual void update(Player &player) {}
 
   virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const {
     sf::CircleShape point(5);
 
-    if (geometry)
-      point.setPosition(geometry->isometricProject(position));
-    else
-      point.setPosition(position);
+    point.setPosition(geometry->isometric(position.getValue()));
 
     point.setFillColor(sf::Color::Magenta);
     target.draw(point);
@@ -40,9 +42,9 @@ struct LevelObject : public sf::Drawable {
 struct TexturedObject : public LevelObject {
   sf::Texture texture;
 
-  explicit TexturedObject(sf::Vector2f t_position,
+  explicit TexturedObject(Cannonical t_position,
                           std::filesystem::path texturePath,
-                          LevelGeometry *t_geometry = nullptr)
+                          LevelGeometry *t_geometry)
       : LevelObject(t_position, t_geometry), texture(texturePath) {}
 
   explicit TexturedObject(sf::Vector2f t_position, sf::Texture t_texture,
@@ -53,7 +55,7 @@ struct TexturedObject : public LevelObject {
     sf::Sprite sprite(texture);
 
     if (geometry)
-      sprite.setPosition(geometry->isometricProject(position));
+      sprite.setPosition(geometry->isometric(position.getValue()));
 
     sprite.setOrigin(static_cast<float>(0.5) * sf::Vector2f(texture.getSize()));
     target.draw(sprite);
@@ -64,15 +66,18 @@ struct AnimatedObject : public LevelObject {
 private:
   bool m_started = false;
 public:
-  std::vector<sf::Texture> frameTextures{};
+  std::vector<sf::Texture> frameTextures;
   size_t currentFrameIndex{0};
+
   sf::Clock clock;
   float frameDuration{0.1}; // in seconds
-  float scale = 1;
   bool randomiseStartingFrame = false;
 
-  explicit AnimatedObject(sf::Vector2f t_position,
-                          LevelGeometry *t_geometry = nullptr)
+  float scale = 1;
+  bool flip = false;
+
+
+  explicit AnimatedObject(sf::Vector2f t_position, LevelGeometry *t_geometry)
       : LevelObject(t_position, t_geometry) {}
 
   void addFrame(std::filesystem::path texturePath) {
@@ -84,19 +89,23 @@ public:
     frameTextures.push_back(frameTexture);
   }
 
-  void setRandomiseStartingFrame(bool set) { randomiseStartingFrame = true; }
+  void setRandomiseStartingFrame(bool set) {
+    randomiseStartingFrame = set;
+    m_started = false;
+  }
 
   void setFrameDuration(float seconds) { frameDuration = seconds; }
   void setScale(float t_scale) { scale = t_scale; }
 
-  virtual void update(void) override {
+  virtual void update(Player &player) override {
     if (frameTextures.empty())
       return;
 
-    // Start with a random frame
-    if (!m_started && randomiseStartingFrame) {
-      currentFrameIndex = std::rand() % frameTextures.size();
+    if (!m_started) {
       m_started = true;
+      // Start with a random frame
+      if (randomiseStartingFrame)
+        currentFrameIndex = std::rand() % frameTextures.size();
     }
 
     if (clock.getElapsedTime().asSeconds() >= frameDuration) {
@@ -106,22 +115,199 @@ public:
     }
   }
 
-  virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override {
+  virtual void draw(sf::RenderTarget &target,
+                    sf::RenderStates states) const override {
     if (frameTextures.empty())
       return;
 
     sf::Sprite sprite(frameTextures[currentFrameIndex]);
 
-    if (geometry) {
-      sprite.setPosition(geometry->isometricProject(position));
-    } else {
+    if (geometry)
+      sprite.setPosition(geometry->isometric(position.getValue()));
+    else
       sprite.setPosition(position);
-    }
+
+    // if (flip)
+      // sprite.
+
     sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
     sprite.setScale(geometry->scale * sf::Vector2f(scale, scale));
     target.draw(sprite);
   }
 };
+
+struct Player : public AnimatedObject {
+private:
+  std::vector<sf::Texture> idlePos;
+  std::vector<sf::Texture> idleNeg;
+  std::vector<sf::Texture> walkPos;
+  std::vector<sf::Texture> walkNeg;
+
+public:
+  enum LookingAt { Xpos, Ypos, Xneg, Yneg };
+
+  size_t coinsCollected = 0;
+  bool reachedStar = false;
+  bool walking = false;
+  LookingAt direction{Xpos};
+
+  bool needsUpdate = true;
+
+  explicit Player(LevelGeometry *geometry)
+      : AnimatedObject(position, geometry) {
+    position.setDuration(0.25); // transition time
+    position.setFunction(Interpolating_function::Ease_out_quad);
+
+    scale = 4;
+
+    idlePos.push_back(sf::Texture("../assets/Objects/Character/idle-pos01.png"));
+    idlePos.push_back(sf::Texture("../assets/Objects/Character/idle-pos02.png"));
+
+    idleNeg.push_back(sf::Texture("../assets/Objects/Character/idle-neg01.png"));
+    idleNeg.push_back(sf::Texture("../assets/Objects/Character/idle-neg02.png"));
+
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos01.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos02.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos03.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos04.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos05.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos06.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos07.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos08.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos09.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos10.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos11.png"));
+    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos12.png"));
+
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg01.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg02.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg03.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg04.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg05.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg06.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg07.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg08.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg09.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg10.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg11.png"));
+    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg12.png"));
+  }
+
+  void update(Player &player) override {
+    if (walking && position.interpolationEnded()) {
+      walking = false;
+      needsUpdate = true;
+    }
+
+    // Standing idle in a positive direction
+    if (needsUpdate && (direction == Xpos || direction == Ypos) && !walking) {
+      setFrameDuration(1);
+      frameTextures = idlePos;
+      currentFrameIndex = 0;
+      needsUpdate = false;
+    }
+
+    // Walking in a positive direction
+    if (needsUpdate && (direction == Xpos || direction == Ypos) && walking) {
+      setFrameDuration(1.0 / walkPos.size());
+      frameTextures = walkPos;
+      setRandomiseStartingFrame(true);
+      needsUpdate = false;
+    }
+
+    // Standing idle in a negative direction
+    if (needsUpdate && (direction == Yneg || direction == Xneg) && !walking) {
+      setFrameDuration(1);
+      frameTextures = idleNeg;
+      currentFrameIndex = 0;
+      needsUpdate = false;
+    }
+
+    // Walking in a negative direction
+    if (needsUpdate && (direction == Yneg || direction == Xneg) && walking) {
+      setFrameDuration(1.0 / walkNeg.size());
+      frameTextures = walkNeg;
+      setRandomiseStartingFrame(true);
+      needsUpdate = false;
+    }
+
+    AnimatedObject::update(player);
+  }
+
+  void turnClockwise(size_t n = 1) {
+    needsUpdate = true;
+    while (n-- > 0) {
+      switch (direction) {
+      case Xpos:
+        direction = Ypos;
+        continue;
+      case Ypos:
+        direction = Xneg;
+        continue;
+      case Xneg:
+        direction = Yneg;
+        continue;
+      case Yneg:
+        direction = Xpos;
+        continue;
+      }
+    }
+  }
+
+  void turnAnticlockwise(size_t n = 1) {
+    needsUpdate = true;
+    while (n-- > 0) {
+      switch (direction) {
+      case Xpos:
+        direction = Yneg;
+        continue;
+      case Yneg:
+        direction = Xneg;
+        continue;
+      case Xneg:
+        direction = Ypos;
+        continue;
+      case Ypos:
+        direction = Xpos;
+        continue;
+      }
+    }
+  }
+
+  void walk(void) {
+    needsUpdate = true;
+    walking = true;
+    position.start = position.end;
+    sf::Vector2f target(position.start.x + ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0),
+                        position.start.y + ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0));
+    position.setTarget(target);
+  }
+
+  void draw(sf::RenderTarget &target, sf::RenderStates states) const override {
+    if (frameTextures.empty())
+      return;
+
+    sf::Sprite sprite(frameTextures[currentFrameIndex]);
+
+    if (geometry)
+      sprite.setPosition(geometry->isometric(position.getValue()));
+    else
+      sprite.setPosition(position);
+
+    if (direction == Ypos || direction == Yneg) {
+      auto [width, height] = sprite.getGlobalBounds().size;
+      const sf::IntRect rect(sf::Vector2i(width, 0),
+                             sf::Vector2i(-width, height));
+      sprite.setTextureRect(rect);
+    }
+
+    const auto size = sprite.getGlobalBounds().size;
+    sprite.setOrigin(sf::Vector2f(0.5 * size.x, 0.75 * size.y));
+    sprite.setScale(geometry->scale * sf::Vector2f(scale, scale));
+    target.draw(sprite);
+  }
+};
+
 
 
 struct Collectable {
@@ -139,25 +325,36 @@ struct Collectable {
 
 struct Coin : public AnimatedObject, public Collectable {
 
-  Coin(sf::Vector2f t_position, LevelGeometry *t_geometry)
+  Coin(Cannonical t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {
     setFrameDuration(0.2);
     setScale(4);
-    addFrame("../assets/Objects/Coin/coin1.png");
-    addFrame("../assets/Objects/Coin/coin2.png");
-    addFrame("../assets/Objects/Coin/coin3.png");
-    addFrame("../assets/Objects/Coin/coin4.png");
-    addFrame("../assets/Objects/Coin/coin5.png");
-    addFrame("../assets/Objects/Coin/coin6.png");
-    addFrame("../assets/Objects/Coin/coin7.png");
-    addFrame("../assets/Objects/Coin/coin8.png");
-    addFrame("../assets/Objects/Coin/coin9.png");
+    addFrame("../assets/Objects/Coin/coin01.png");
+    addFrame("../assets/Objects/Coin/coin02.png");
+    addFrame("../assets/Objects/Coin/coin03.png");
+    addFrame("../assets/Objects/Coin/coin04.png");
+    addFrame("../assets/Objects/Coin/coin05.png");
+    addFrame("../assets/Objects/Coin/coin06.png");
+    addFrame("../assets/Objects/Coin/coin07.png");
+    addFrame("../assets/Objects/Coin/coin08.png");
+    addFrame("../assets/Objects/Coin/coin09.png");
     addFrame("../assets/Objects/Coin/coin10.png");
     setRandomiseStartingFrame(true);
   }
 
-  virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override {
-    AnimatedObject::draw(target, states);
+  void update(Player &player) final override {
+    AnimatedObject::update(player);
+
+    if (player.position.getValue() == this->position.getValue()) {
+      collect();
+      player.coinsCollected++;
+    }
+  }
+
+  virtual void draw(sf::RenderTarget &target,
+                    sf::RenderStates states) const override {
+    if (!collected)
+      AnimatedObject::draw(target, states);
   }
 };
 
@@ -165,14 +362,36 @@ struct Star : public AnimatedObject, public Collectable {
 
   Star(sf::Vector2f t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {
-    sf::Texture starTexture("../assets/Objects/Star.png");
-    sf::Texture starFrame;
-
     setFrameDuration(0.2);
     setScale(4);
-
-    sf::Sprite s(starFrame);
-    // s.setTextureRect(const IntRect &rectangle);
+    addFrame("../assets/Objects/Star/star01.png");
+    addFrame("../assets/Objects/Star/star02.png");
+    addFrame("../assets/Objects/Star/star03.png");
+    addFrame("../assets/Objects/Star/star04.png");
+    addFrame("../assets/Objects/Star/star05.png");
+    addFrame("../assets/Objects/Star/star06.png");
+    addFrame("../assets/Objects/Star/star07.png");
+    addFrame("../assets/Objects/Star/star08.png");
+    addFrame("../assets/Objects/Star/star09.png");
+    addFrame("../assets/Objects/Star/star10.png");
+    addFrame("../assets/Objects/Star/star11.png");
+    addFrame("../assets/Objects/Star/star12.png");
+    addFrame("../assets/Objects/Star/star13.png");
+    setRandomiseStartingFrame(true);
   }
 
+  void update(Player &player) final override {
+    AnimatedObject::update(player);
+
+    if (player.position.getValue() == this->position.getValue()) {
+      collect();
+      player.reachedStar = true;
+    }
+  }
+
+  virtual void draw(sf::RenderTarget &target,
+                    sf::RenderStates states) const override {
+    if (!collected)
+      AnimatedObject::draw(target, states);
+  }
 };
