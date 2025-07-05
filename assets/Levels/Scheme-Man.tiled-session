@@ -1,0 +1,102 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "001.tmx",
+    "expandedProjectPaths": [
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor"
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Dry_01-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Dry_02-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Elements_01-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Elements_02-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Flora_01-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Flora_02-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Grass_01-256x128.tsx": {
+            "scaleInDock": 0.4911,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Grass_02-256x128.tsx": {
+            "scaleInDock": 0.4353,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Ice_01-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Ice_02-256x128.tsx": {
+            "scaleInDock": 0.4957,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Rocky_01-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Rocky_02-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Stones_01-256x128.tsx": {
+            "scaleInDock": 0.5121,
+            "scaleInEditor": 1
+        },
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Stones_02-256x128.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "001.tmx": {
+            "scale": 1.01,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 895.049504950495,
+                "y": 322.2772277227723
+            }
+        }
+    },
+    "map.height": 7,
+    "map.lastUsedFormat": "tmx",
+    "map.orientation": "2",
+    "map.tileHeight": 128,
+    "map.tileWidth": 256,
+    "map.width": 7,
+    "openFiles": [
+        "001.tmx"
+    ],
+    "project": "Scheme-Man.tiled-project",
+    "recentFiles": [
+        "001.tmx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Stones_01-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Rocky_02-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Rocky_01-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Ice_02-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Ice_01-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Grass_02-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Grass_01-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Flora_02-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Flora_01-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Elements_02-256x128.tsx",
+        "/Users/Ronaldo/Sources/sfml-isometric-game/assets/Floor/Tsx/Exterior/Floor_Elements_01-256x128.tsx"
+    ],
+    "textEdit.monospace": false
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="isometric" renderorder="right-down" width="15" height="15" tilewidth="512" tileheight="256" infinite="0" nextlayerid="3" nextobjectid="24">
+ <tileset firstgid="1" source="../Floors/Floors.tsx"/>
+ <tileset firstgid="11" source="../Objects/Coin/Coin.tsx"/>
+ <layer id="1" name="Floor" width="15" height="15">
+  <data encoding="csv">
+1,2,1,2,1,2,1,2,1,0,5,4,3,2,1,
+2,0,0,0,0,0,0,0,2,0,10,9,8,7,6,
+1,0,4,4,4,4,4,0,1,0,0,0,0,0,0,
+2,0,4,0,0,0,4,0,2,1,2,1,2,1,2,
+1,0,4,0,0,0,0,0,0,0,0,0,0,0,1,
+2,0,4,0,4,4,4,4,4,4,4,4,4,0,2,
+1,0,4,0,4,0,0,0,0,0,0,0,4,0,1,
+2,0,4,0,4,0,4,4,4,4,4,0,4,0,2,
+1,0,4,0,4,0,4,0,0,0,4,0,4,0,1,
+2,0,4,0,4,0,4,0,4,0,4,0,4,0,2,
+1,0,4,0,4,0,4,0,4,0,4,0,4,0,1,
+2,0,4,0,4,0,4,0,4,0,4,0,4,0,2,
+1,0,4,4,4,0,4,4,4,0,4,4,4,0,1,
+2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+1,2,1,2,1,2,1,2,1,2,1,2,1,2,1
+</data>
+ </layer>
+ <objectgroup id="2" name="Objects">
+  <object id="1" type="coin" gid="11" x="1632.87" y="631.515" width="100" height="100"/>
+  <object id="2" type="coin" gid="11" x="623.837" y="620.534" width="100" height="100"/>
+  <object id="3" type="coin" gid="11" x="1120.42" y="611.993" width="100" height="100"/>
+  <object id="4" type="coin" gid="11" x="898.513" y="3167.95" width="100" height="100"/>
+  <object id="5" type="coin" gid="11" x="1136.61" y="1404.43" width="100" height="100"/>
+  <object id="6" type="coin" gid="11" x="2107.15" y="1386.27" width="100" height="100"/>
+  <object id="7" type="coin" gid="11" x="3160.42" y="1398.38" width="100" height="100"/>
+  <object id="8" type="coin" gid="11" x="2682.21" y="3143.74" width="100" height="100"/>
+  <object id="9" type="coin" gid="11" x="2674.14" y="2925.82" width="100" height="100"/>
+  <object id="10" type="coin" gid="11" x="2678.17" y="2695.8" width="100" height="100"/>
+  <object id="11" type="coin" gid="11" x="2670.1" y="1912.91" width="100" height="100"/>
+  <object id="12" type="coin" gid="11" x="2413.85" y="1894.75" width="100" height="100"/>
+  <object id="13" type="coin" gid="11" x="2145.49" y="1896.77" width="100" height="100"/>
+  <object id="14" type="coin" gid="11" x="1907.39" y="1892.73" width="100" height="100"/>
+  <object id="15" type="coin" gid="11" x="1647.1" y="1902.82" width="100" height="100"/>
+  <object id="16" type="coin" gid="11" x="1659.21" y="3157.86" width="100" height="100"/>
+  <object id="17" type="coin" gid="11" x="1887.21" y="3171.99" width="100" height="100"/>
+  <object id="18" type="coin" gid="11" x="2147.5" y="3178.04" width="100" height="100"/>
+  <object id="19" type="coin" gid="11" x="2126.86" y="2912.64" width="100" height="100"/>
+  <object id="20" type="coin" gid="11" x="2189.08" y="2881.82" width="100" height="100"/>
+  <object id="21" type="coin" gid="11" x="2107.27" y="2644" width="100" height="100"/>
+  <object id="22" type="coin" gid="11" x="2153.54" y="2604" width="100" height="100"/>
+  <object id="23" type="coin" gid="11" x="2178.63" y="2679.28" width="100" height="100"/>
+ </objectgroup>
+</map>
