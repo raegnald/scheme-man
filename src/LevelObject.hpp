@@ -10,6 +10,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <tmxlite/Object.hpp>
@@ -27,12 +28,19 @@ struct LevelObject : public sf::Drawable {
 
   void setPosition(Cannonical p) { position.start = p; }
 
+  Isometric getPosition(void) const {
+    if (geometry)
+      return geometry->isometric(position.getValue());
+    else
+      return position.getValue();
+  }
+
   virtual void update(Player &player) {}
 
   virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const {
     sf::CircleShape point(5);
 
-    point.setPosition(geometry->isometric(position.getValue()));
+    point.setPosition(getPosition());
 
     point.setFillColor(sf::Color::Magenta);
     target.draw(point);
@@ -51,11 +59,14 @@ struct TexturedObject : public LevelObject {
                           LevelGeometry *t_geometry = nullptr)
       : LevelObject(t_position, t_geometry), texture(t_texture) {}
 
+  sf::Vector2u getSize(void) const {
+    return texture.getSize();
+  }
+
   virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override {
     sf::Sprite sprite(texture);
 
-    if (geometry)
-      sprite.setPosition(geometry->isometric(position.getValue()));
+    sprite.setPosition(getPosition());
 
     sprite.setOrigin(static_cast<float>(0.5) * sf::Vector2f(texture.getSize()));
     target.draw(sprite);
@@ -65,20 +76,25 @@ struct TexturedObject : public LevelObject {
 struct AnimatedObject : public LevelObject {
 private:
   bool m_started = false;
+
+  float m_frameDuration{0.1}; // in seconds
+  bool m_randomiseStartingFrame = false;
+
 public:
   std::vector<sf::Texture> frameTextures;
   size_t currentFrameIndex{0};
 
   sf::Clock clock;
-  float frameDuration{0.1}; // in seconds
-  bool randomiseStartingFrame = false;
 
-  float scale = 1;
+  float scale = 1.0;
+  Interpolated<float> opacity{1.0};
   bool flip = false;
 
 
   explicit AnimatedObject(sf::Vector2f t_position, LevelGeometry *t_geometry)
-      : LevelObject(t_position, t_geometry) {}
+      : LevelObject(t_position, t_geometry) {
+    opacity.setDuration(0.1);
+  }
 
   void addFrame(std::filesystem::path texturePath) {
     sf::Texture frameTexture(texturePath);
@@ -90,12 +106,17 @@ public:
   }
 
   void setRandomiseStartingFrame(bool set) {
-    randomiseStartingFrame = set;
+    m_randomiseStartingFrame = set;
     m_started = false;
   }
 
-  void setFrameDuration(float seconds) { frameDuration = seconds; }
+  void setFrameDuration(float seconds) { m_frameDuration = seconds; }
   void setScale(float t_scale) { scale = t_scale; }
+
+
+  sf::Vector2u getSize(void) const {
+    return frameTextures[currentFrameIndex].getSize();
+  }
 
   virtual void update(Player &player) override {
     if (frameTextures.empty())
@@ -104,11 +125,11 @@ public:
     if (!m_started) {
       m_started = true;
       // Start with a random frame
-      if (randomiseStartingFrame)
+      if (m_randomiseStartingFrame)
         currentFrameIndex = std::rand() % frameTextures.size();
     }
 
-    if (clock.getElapsedTime().asSeconds() >= frameDuration) {
+    if (clock.getElapsedTime().asSeconds() >= m_frameDuration) {
       currentFrameIndex++;
       currentFrameIndex %= frameTextures.size();
       clock.restart();
@@ -122,16 +143,13 @@ public:
 
     sf::Sprite sprite(frameTextures[currentFrameIndex]);
 
-    if (geometry)
-      sprite.setPosition(geometry->isometric(position.getValue()));
-    else
-      sprite.setPosition(position);
-
-    // if (flip)
-      // sprite.
-
+    sprite.setPosition(getPosition());
     sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
-    sprite.setScale(geometry->scale * sf::Vector2f(scale, scale));
+    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
+
+    sprite.setColor(sf::Color(
+        255, 255, 255, std::clamp(static_cast<int>(255 * opacity), 0, 255)));
+
     target.draw(sprite);
   }
 };
@@ -290,9 +308,7 @@ public:
     sf::Sprite sprite(frameTextures[currentFrameIndex]);
 
     if (geometry)
-      sprite.setPosition(geometry->isometric(position.getValue()));
-    else
-      sprite.setPosition(position);
+      sprite.setPosition(getPosition());
 
     if (direction == Ypos || direction == Yneg) {
       auto [width, height] = sprite.getGlobalBounds().size;
@@ -303,7 +319,7 @@ public:
 
     const auto size = sprite.getGlobalBounds().size;
     sprite.setOrigin(sf::Vector2f(0.5 * size.x, 0.75 * size.y));
-    sprite.setScale(geometry->scale * sf::Vector2f(scale, scale));
+    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
     target.draw(sprite);
   }
 };
@@ -345,16 +361,17 @@ struct Coin : public AnimatedObject, public Collectable {
   void update(Player &player) final override {
     AnimatedObject::update(player);
 
-    if (player.position.getValue() == this->position.getValue()) {
+    if (player.position.end == this->position.getValue()) {
       collect();
+      opacity.setTarget(0);
       player.coinsCollected++;
     }
   }
 
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
-    if (!collected)
-      AnimatedObject::draw(target, states);
+    // if (!collected)
+    AnimatedObject::draw(target, states);
   }
 };
 
@@ -383,7 +400,8 @@ struct Star : public AnimatedObject, public Collectable {
   void update(Player &player) final override {
     AnimatedObject::update(player);
 
-    if (player.position.getValue() == this->position.getValue()) {
+    if (player.position.end == this->position.getValue()) {
+      opacity.setTarget(0);
       collect();
       player.reachedStar = true;
     }
@@ -391,7 +409,7 @@ struct Star : public AnimatedObject, public Collectable {
 
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
-    if (!collected)
-      AnimatedObject::draw(target, states);
+    // if (!collected)
+    AnimatedObject::draw(target, states);
   }
 };

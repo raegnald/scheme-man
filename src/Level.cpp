@@ -1,4 +1,5 @@
 #include "Level.hpp"
+#include "Interpolated.hpp"
 #include "LevelGeometry.hpp"
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -56,8 +57,11 @@ bool Level::load(void) {
   // Load textures
   loadTextures();
 
+  // Level geometry
   geometry.dimensions =
     sf::Vector2u(map.getTileCount().x, map.getTileCount().y);
+  // geometry.scale.setDuration(0.1);
+  // geometry.scale.setFunction(Interpolating_function::Ease_out_quad);
 
   // Load level objects
   for (auto &layer : map.getLayers()) {
@@ -103,6 +107,7 @@ void Level::update(void) {
 }
 
 void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
+  // Floor tiles
   sf::Sprite sprite(textures[0]);
   sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
 
@@ -137,9 +142,44 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
     }
   }
 
+  // Level objects
   for (const auto &levelObject : objects) {
     target.draw(*levelObject);
   }
 
+  // Player
   target.draw(player);
+
+  // Player status
+  if (const auto status = getStatus()) {
+    const bool too_small = (geometry.scale < 0.25);
+
+    const auto players_head =
+        geometry.isometric(player.position.getValue()) -
+        sf::Vector2f(0, 3.75 * player.getSize().y * geometry.scale);
+
+    if (too_small) {
+      static sf::Texture lightBulb_texture(
+          "../assets/Objects/Light-bulb/light-bulb.png");
+      sf::Sprite lightBulb(lightBulb_texture);
+      lightBulb.setPosition(players_head);
+      lightBulb.setOrigin(static_cast<float>(0.5) * lightBulb.getGlobalBounds().size);
+      lightBulb.setScale(static_cast<float>(1.5 * geometry.scale) *
+                         sf::Vector2f(1, 1));
+
+      target.draw(lightBulb);
+    } else {
+      sf::Text text{m_font, status.value()};
+      text.setCharacterSize(30);
+      text.setFillColor(sf::Color::White);
+      text.setOutlineColor(sf::Color::Black);
+      text.setOutlineThickness(2.0);
+
+      text.setPosition(players_head);
+      text.setOrigin(static_cast<float>(0.5) * text.getGlobalBounds().size);
+      text.setScale(2 * geometry.scale * sf::Vector2f(1, 1));
+
+      target.draw(text);
+    }
+  }
 }

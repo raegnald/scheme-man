@@ -4,7 +4,9 @@
 
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/System/Clock.hpp>
 #include <memory>
+#include <optional>
 #include <print>
 #include <tmxlite/Map.hpp>
 #include <filesystem>
@@ -16,11 +18,21 @@ constexpr float min_level_scale = 0.2;
 constexpr float max_level_scale = 2.0;
 
 struct Level : public sf::Drawable {
+private:
+  tmx::Map map;
+  sf::Font m_font{"../assets/Fonts/Pangolin.ttf"};
+
+  // Status text
+  std::string m_status_text{};
+  sf::Clock m_status_clock{};
+  bool m_status_permanent{false};
+  static constexpr float m_status_duration = 5.0; // in seconds
+
+public:
   std::filesystem::path tilemap;
 
   LevelGeometry geometry;
 
-  tmx::Map map;
 
   std::vector<sf::Texture> textures;
 
@@ -39,9 +51,9 @@ struct Level : public sf::Drawable {
 
   void setOrigin(sf::Vector2f u) { geometry.origin = u; }
   void setScale(float s) {
-    if (s > 2.0) s = max_level_scale;
-    if (s < 0.1) s = min_level_scale;
-    geometry.scale = s;
+    if (s > max_level_scale) s = max_level_scale;
+    if (s < min_level_scale) s = min_level_scale;
+    geometry.scale.setTarget(s);
   }
 
   [[nodiscard]]
@@ -50,6 +62,29 @@ struct Level : public sf::Drawable {
   void update(void);
 
   void draw(sf::RenderTarget &target, sf::RenderStates states) const;
+
+  void setStatus(const std::string_view s, bool permanent = false) {
+    m_status_text = s;
+    m_status_clock.restart();
+    m_status_permanent = permanent;
+  }
+
+  void clearStatus(void) {
+    m_status_text.clear();
+    m_status_clock.reset();
+    m_status_permanent = false;
+  }
+
+  std::optional<const std::string> getStatus(void) const {
+    if (m_status_permanent)
+      return m_status_text;
+
+    if (m_status_clock.isRunning() &&
+        m_status_clock.getElapsedTime().asSeconds() < m_status_duration)
+      return m_status_text;
+
+    return std::nullopt;
+  }
 
 private:
   bool loadTextures(void);

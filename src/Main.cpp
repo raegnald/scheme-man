@@ -1,3 +1,4 @@
+#include <SFML/Config.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/Window/Event.hpp>
@@ -9,6 +10,9 @@
 #include "Interpolated.hpp"
 #include "Level.hpp"
 #include "LevelObject.hpp"
+
+static_assert(SFML_VERSION_MAJOR == 3, "SFML version 3 required");
+static_assert(__cplusplus >= 202302L, "Use C++23 or later");
 
 constexpr auto victoryBackground = sf::Color(0xd9, 0xf9, 0xdf);
 constexpr auto failureBackground = sf::Color(0xf2, 0xc0, 0xb0);
@@ -37,17 +41,14 @@ void sfmlMain(int argc, char *argv[]) {
 
   sf::View view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize()));
 
-  sf::CircleShape point(5);
-  point.setFillColor(sf::Color::Magenta);
-
-  sf::CircleShape originPoint(5);
-  originPoint.setFillColor(sf::Color::Green);
-
   Interpolated<sf::Vector3f> currentBackground(vectorFromColor(level.background));
   currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
   Interpolated<sf::Vector2f> viewCenter{sf::Vector2f(0, 0)};
+  viewCenter.setFunction(Interpolating_function::Ease_out_quad);
   viewCenter.setDuration(0.1);
+
+  // level.setStatus("Message that the user can configure", true);
 
   while (window.isOpen()) {
     while (const auto event = window.pollEvent()) {
@@ -69,12 +70,15 @@ void sfmlMain(int argc, char *argv[]) {
         switch (key->code) {
         case sf::Keyboard::Key::Space:
           level.player.walk();
+          level.setStatus("Walking");
           break;
         case sf::Keyboard::Key::C:
           level.player.turnClockwise();
+          level.setStatus("Turning right");
           break;
         case sf::Keyboard::Key::X:
           level.player.turnAnticlockwise();
+          level.setStatus("Turning left");
         default:
           break;
         }
@@ -88,22 +92,16 @@ void sfmlMain(int argc, char *argv[]) {
           const auto newPos = window.mapPixelToCoords(dragged->position);
           const auto deltaPos = oldPos - newPos;
 
-          // view.setCenter(view.getCenter() + deltaPos);
           viewCenter.setTarget(view.getCenter() + deltaPos);
           window.setView(view);
         }
       }
 
       if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>()) {
-        // TODO: Tenemos que hacer zoom respecto a la posición del
-        // ratón para que se sienta más natural -- no respecto al
-        // origen del nivel.
         auto t = window.mapPixelToCoords(scroll->position, view);
-        point.setPosition(t);
 
-        float delta = 0.05 * scroll->delta;
-
-        level.setScale(level.geometry.scale + delta);
+        // TODO: Implement kinetic scrolling interpolation
+        level.setScale(level.geometry.scale.getValue() + scroll->delta);
 
         const auto playerCenter =
           level.geometry.isometric(level.player.position.getValue());
@@ -140,13 +138,6 @@ void sfmlMain(int argc, char *argv[]) {
     window.setView(view);
     level.update();
     window.draw(level);
-
-    if (0) {
-      originPoint.setPosition(level.geometry.origin);
-      window.draw(originPoint);
-
-      window.draw(point);
-    }
 
     window.display();
   }
