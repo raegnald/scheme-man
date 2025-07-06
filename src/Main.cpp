@@ -1,5 +1,6 @@
 #include <SFML/Config.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
@@ -48,7 +49,9 @@ void sfmlMain(int argc, char *argv[]) {
   viewCenter.setFunction(Interpolating_function::Ease_out_quad);
   viewCenter.setDuration(0.1);
 
-  // level.setStatus("Message that the user can configure", true);
+  sf::Clock clock;
+
+  level.setStatus("Hello!", true);
 
   while (window.isOpen()) {
     while (const auto event = window.pollEvent()) {
@@ -98,31 +101,47 @@ void sfmlMain(int argc, char *argv[]) {
       }
 
       if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>()) {
-        auto t = window.mapPixelToCoords(scroll->position, view);
+        // Reset acceleration when scrolling in different direction so
+        // that it feels more snappy
+        if (scroll->delta * level.geometry.scale < 0)
+          level.geometry.scale.stopMovement();
 
-        // TODO: Implement kinetic scrolling interpolation
-        level.setScale(level.geometry.scale.getValue() + scroll->delta);
+        // level.geometry.scale.applyAcceleration(10 * scroll->delta);
+        level.setScale(level.geometry.scale.getValue() +
+                       0.1 * scroll->delta);
 
+        // TODO: Zooming should put the player at the center of the
+        // window. If I do so, setting the view center to the position
+        // of the player, the view shakes very impleasantly. Could it
+        // be because of some sort of feedback loop? (Player's
+        // position --in isometric space-- depends on the scale, but
+        // the center of the view depends on the player's position,
+        // hmmm, idk).
+        //
         const auto playerCenter =
           level.geometry.isometric(level.player.position.getValue());
-        if (viewCenter.interpolationEnded())
-          viewCenter.setTarget(playerCenter);
-        else
-          viewCenter.setOrigin(playerCenter);
+        viewCenter.setOrigin(playerCenter);
       }
     }
 
-    if (!gameEnd && level.player.reachedStar) {
-      gameEnd = true;
-      currentBackground.setTarget(vectorFromColor(victoryBackground));
-    }
+    // Update level
+    const auto elapsed = clock.restart().asSeconds();
+    level.update(elapsed);
 
-    if (!gameEnd) {
-      const auto [x, y] = level.player.position.getValue();
-      const auto [w, h] = level.geometry.dimensions;
-      if (x < 0 || y < 0 || x >= w || y >= h) {
+    // Check for game end
+    {
+      if (!gameEnd && level.player.reachedStar) {
         gameEnd = true;
-        currentBackground.setTarget(vectorFromColor(failureBackground));
+        currentBackground.setTarget(vectorFromColor(victoryBackground));
+      }
+
+      if (!gameEnd) {
+        const auto [x, y] = level.player.position.getValue();
+        const auto [w, h] = level.geometry.dimensions;
+        if (x < 0 || y < 0 || x >= w || y >= h) {
+          gameEnd = true;
+          currentBackground.setTarget(vectorFromColor(failureBackground));
+        }
       }
     }
 
@@ -132,13 +151,11 @@ void sfmlMain(int argc, char *argv[]) {
       viewCenter.setTarget(playerCenter);
     }
 
-    view.setCenter(viewCenter.getValue());
+    view.setCenter(viewCenter);
 
     window.clear(colorFromVector(currentBackground));
     window.setView(view);
-    level.update();
     window.draw(level);
-
     window.display();
   }
 }

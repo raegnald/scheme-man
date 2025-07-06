@@ -14,9 +14,6 @@
 #include "LevelGeometry.hpp"
 #include "LevelObject.hpp"
 
-constexpr float min_level_scale = 0.2;
-constexpr float max_level_scale = 2.0;
-
 struct Level : public sf::Drawable {
 private:
   tmx::Map map;
@@ -51,15 +48,14 @@ public:
 
   void setOrigin(sf::Vector2f u) { geometry.origin = u; }
   void setScale(float s) {
-    if (s > max_level_scale) s = max_level_scale;
-    if (s < min_level_scale) s = min_level_scale;
-    geometry.scale.setTarget(s);
+    geometry.scale.setValue(s);
+    geometry.ensureScaleInBounds();
   }
 
   [[nodiscard]]
   bool load(void);
 
-  void update(void);
+  void update(float dt);
 
   void draw(sf::RenderTarget &target, sf::RenderStates states) const;
 

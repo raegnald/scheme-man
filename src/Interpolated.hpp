@@ -76,5 +76,6 @@ public:
   void setFunction(Interpolating_function type) { interp = type; }
 
   operator T() const { return getValue(); }
+  operator T() { return getValue(); }
   void operator=(const T &target) { setTarget(target); }
 };

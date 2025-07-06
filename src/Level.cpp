@@ -60,8 +60,8 @@ bool Level::load(void) {
   // Level geometry
   geometry.dimensions =
     sf::Vector2u(map.getTileCount().x, map.getTileCount().y);
-  // geometry.scale.setDuration(0.1);
-  // geometry.scale.setFunction(Interpolating_function::Ease_out_quad);
+
+  geometry.scale.setMinAcceleration(1);
 
   // Load level objects
   for (auto &layer : map.getLayers()) {
@@ -99,7 +99,11 @@ bool Level::load(void) {
   return true;
 }
 
-void Level::update(void) {
+void Level::update(float dt) {
+  // Update level geometry (specially scale)
+  geometry.update(dt);
+  setScale(geometry.scale); // ensures scale is bounded
+
   player.update(player);
   for (auto &levelObject : objects) {
     levelObject->update(player);
