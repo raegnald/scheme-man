@@ -4,7 +4,6 @@
 
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
-#include <SFML/System/Clock.hpp>
 #include <memory>
 #include <optional>
 #include <print>
@@ -13,6 +12,7 @@
 #include <vector>
 #include "LevelGeometry.hpp"
 #include "LevelObject.hpp"
+#include "Lisp.hpp"
 
 struct Level : public sf::Drawable {
 private:
@@ -24,6 +24,8 @@ private:
   sf::Clock m_status_clock{};
   bool m_status_permanent{false};
   static constexpr float m_status_duration = 5.0; // in seconds
+
+  Lisp interpreter;
 
 public:
   std::filesystem::path tilemap;
