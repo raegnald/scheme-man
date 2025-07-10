@@ -3,7 +3,7 @@
 
 ## Build
 
-1. Install CMake and SFML3. On MacOS: `brew install cmake sfml@3`
+1. Install CMake and SFML3. On MacOS: `brew install cmake sfml@3 guile`
 2. Build with CMake:
 
 ```shell

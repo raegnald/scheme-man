@@ -1,6 +1,3 @@
 [submodule "lib/tmxlite"]
 	path = lib/tmxlite
 	url = https://github.com/fallahn/tmxlite.git
-[submodule "lib/ecl"]
-	path = lib/ecl
-	url = https://gitlab.com/embeddable-common-lisp/ecl.git

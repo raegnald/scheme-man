@@ -104,6 +104,9 @@ void Level::update(float dt) {
   geometry.update(dt);
   setScale(geometry.scale); // ensures scale is bounded
 
+  interpreter.update(this);
+
+  // Update player and objects
   player.update(player);
   for (auto &levelObject : objects) {
     levelObject->update(player);

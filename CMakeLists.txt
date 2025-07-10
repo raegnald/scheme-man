@@ -21,17 +21,13 @@ pkg_check_modules(SFML REQUIRED IMPORTED_TARGET
   sfml-window
 )
 
+# Find Guile using pkg-config
+pkg_check_modules(GUILE REQUIRED IMPORTED_TARGET
+  guile-3.0)
+
 # tmxlite package
 add_subdirectory(lib/tmxlite/tmxlite)
 include_directories(${TMXLITE_INCLUDE_DIR})
-
-# ECL package
-find_package(ECL REQUIRED)
-message(ECL_FOUND="${ECL_FOUND}")
-include_directories(${ECL_INCLUDE_DIR})
-message(ECL_INCLUDE_DIR="${ECL_INCLUDE_DIR}")
-message(ECL_LIBRARIES="${ECL_LIBRARIES}")
-
 
 # Collect source files
 file(GLOB SOURCES "src/*.cpp")
@@ -42,6 +38,6 @@ add_executable(scman ${SOURCES})
 # Link against SFML and tmxlite
 target_link_libraries(scman PRIVATE
   PkgConfig::SFML
-  ${ECL_LIBRARIES}
+  PkgConfig::GUILE
   tmxlite
 )

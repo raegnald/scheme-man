@@ -1,22 +1,43 @@
-// An abstraction to initialise a (Common) Lisp interpreter, execute
-// code, and free the interpreter.
+// An abstraction to initialise, manage a Lisp interpreter
+// (specifically GNU Guile Scheme) and interact with the game logic in
+// C++.
 
 #pragma once
 
-#include <ecl/ecl.h>
-// #include <ecl.
-#include <string>
+#include <libguile.h>
+#include <thread>
+#include <cstdlib>
+
+struct Level;
 
 struct Lisp {
-  using Object = cl_object;
+private:
+  std::thread m_guile_thread;
 
-  Lisp(void) { cl_boot(0, NULL); }
-  Lisp(int argc, char *argv[]) { cl_boot(argc, argv); }
+  SCM m_level_access, m_action_symbol, m_action_arg, m_action_result,
+      m_game_ended_p, m_reset_values_fun;
 
-  ~Lisp(void) { cl_shutdown(); }
-
-  Object eval(Object object) { return cl_eval(object); }
-  Object eval(const std::string &source) {
-    return cl_eval(cl_string_to_object(source.c_str()));
+  void m_bind_scman_guile_values(void) {
+    m_level_access     = scm_c_lookup("scman-intrinsic/level-access");
+    m_action_symbol    = scm_c_lookup("scman-intrinsic/action-to-perform");
+    m_action_arg       = scm_c_lookup("scman-intrinsic/action-argument");
+    m_action_result    = scm_c_lookup("scman-intrinsic/action-result");
+    m_game_ended_p     = scm_c_lookup("scman-intrinsic/game-ended-p");
+    m_reset_values_fun = scm_c_lookup("scman-internal/reset-action-values");
   }
+
+  void m_execute_guile(void) {
+    setenv("GUILE_AUTO_COMPILE", "1", 0);
+    scm_init_guile();
+    scm_c_primitive_load("../assets/Lisp/prelude.scm");
+    m_bind_scman_guile_values();
+    scm_shell(0, NULL);
+  }
+
+public:
+  Lisp(void) : m_guile_thread([this]() { this->m_execute_guile(); }) {
+    m_guile_thread.detach();
+  }
+
+  void update(Level *level);
 };
