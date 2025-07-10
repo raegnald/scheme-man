@@ -9,7 +9,7 @@
 (walk)
 (walk)
 (turn-right)
-x
+
 (walk)
 (walk)
 (walk)
