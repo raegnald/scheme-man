@@ -38,16 +38,29 @@
   (set! scman-intrinsic/action-to-perform action))
 
 
+;; Nice little macros that aid in solving levels
+
+(define-syntax repeat
+  (syntax-rules ()
+    ((_ n body ...)
+     ;; Unhygienic!
+     (let loop ((count n))
+       (when (> count 0)
+         body ...
+         (loop (1- count)))))))
+
 ;; Actions
 
 (define (walk)
   (scman-internal/perform-action
      (scman-internal/set-action 'walk)))
 
-(define (turn-right)
-  (scman-internal/perform-action
-     (scman-internal/set-action 'turn-right)))
-
-(define (turn-left)
-  (scman-internal/perform-action
-     (scman-internal/set-action 'turn-left)))
+(define (turn direction)
+  (case direction
+    ('right
+     (scman-internal/perform-action
+      (scman-internal/set-action 'turn-right)))
+    ('left
+     (scman-internal/perform-action
+      (scman-internal/set-action 'turn-left)))
+    (else (error "Cannot turn in that direction!"))))

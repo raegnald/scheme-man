@@ -1,30 +1,18 @@
-;; Posicionarse bien:
-(walk)
-(turn-right)
-(walk)
-(turn-left)
-;; Ya el nivel en sí:
-(walk)
-(walk)
-(walk)
-(walk)
-(turn-right)
 
+;;;;
+;; NOTE: This is a temporary fix because the player is put at the map
+;; origin, not the intended origin of the level. THIS IS NOT PART OF
+;; THE SOLUTION!
 (walk)
+(turn 'right)
 (walk)
-(walk)
-(walk)
-(turn-right)
+(turn 'left)
+;;;;
 
-(walk)
-(walk)
-(walk)
-(walk)
-(turn-right)
+(repeat 3
+  (repeat 4 (walk))
+  (turn 'right))
 
-(walk)
-(walk)
-(turn-right)
-
-(walk)
-(walk)
+(repeat 2
+  (repeat 2 (walk))
+  (turn 'right))
