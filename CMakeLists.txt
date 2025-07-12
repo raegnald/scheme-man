@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
 project(SchemeMan LANGUAGES CXX)
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_SOURCE_DIR}/cmake/")
-
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 23)

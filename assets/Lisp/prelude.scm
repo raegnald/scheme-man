@@ -27,15 +27,12 @@
      (begin
        ;; The mutex we now lock will be unlocked by C++ after the
        ;; action to be completed is done
-       (lock-mutex scman-intrinsic/level-access)
+       ;; (lock-mutex scman-intrinsic/level-access)
+       (scman-intrinsic/start-action)
 
        (scman-internal/reset-action-values)
        (begin body ...)
        '())]))
-
-(define (scman-internal/set-action action)
-  ;; TODO: assert action in '('walk 'turn-left 'turn-right)
-  (set! scman-intrinsic/action-to-perform action))
 
 
 ;; Nice little macros that aid in solving levels
@@ -53,14 +50,19 @@
 
 (define (walk)
   (scman-internal/perform-action
-     (scman-internal/set-action 'walk)))
+   (set! scman-intrinsic/action-to-perform 'walk)))
 
 (define (turn direction)
   (case direction
     ('right
      (scman-internal/perform-action
-      (scman-internal/set-action 'turn-right)))
+      (set! scman-intrinsic/action-to-perform 'turn-right)))
     ('left
      (scman-internal/perform-action
-      (scman-internal/set-action 'turn-left)))
+      (set! scman-intrinsic/action-to-perform 'turn-left)))
     (else (error "Cannot turn in that direction!"))))
+
+(define (status message)
+  (scman-internal/perform-action
+   (set! scman-intrinsic/action-to-perform 'set-status)
+   (set! scman-intrinsic/action-argument message)))

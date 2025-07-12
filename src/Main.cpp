@@ -69,23 +69,23 @@ void sfmlMain(int argc, char *argv[]) {
         oldPos = window.mapPixelToCoords(mouse->position);
       }
 
-      if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
-        switch (key->code) {
-        case sf::Keyboard::Key::Space:
-          level.player.walk();
-          level.setStatus("Walking");
-          break;
-        case sf::Keyboard::Key::C:
-          level.player.turnClockwise();
-          level.setStatus("Turning right");
-          break;
-        case sf::Keyboard::Key::X:
-          level.player.turnAnticlockwise();
-          level.setStatus("Turning left");
-        default:
-          break;
-        }
-      }
+      // if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+      //   switch (key->code) {
+      //   case sf::Keyboard::Key::Space:
+      //     level.player.walk();
+      //     level.setStatus("Walking");
+      //     break;
+      //   case sf::Keyboard::Key::C:
+      //     level.player.turnClockwise();
+      //     level.setStatus("Turning right");
+      //     break;
+      //   case sf::Keyboard::Key::X:
+      //     level.player.turnAnticlockwise();
+      //     level.setStatus("Turning left");
+      //   default:
+      //     break;
+      //   }
+      // }
 
       if (event->is<sf::Event::MouseButtonReleased>())
         mouse_clicked = false;
