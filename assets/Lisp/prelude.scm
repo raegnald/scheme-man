@@ -21,6 +21,9 @@
   (set! scman-intrinsic/action-argument '())
   (set! scman-intrinsic/action-result '()))
 
+(define (scman-internal/start-action)
+  (scman-intrinsic/start-action))
+
 (define-syntax scman-internal/perform-action
   (syntax-rules ()
     [(_ body ...)
@@ -28,7 +31,7 @@
        ;; The mutex we now lock will be unlocked by C++ after the
        ;; action to be completed is done
        ;; (lock-mutex scman-intrinsic/level-access)
-       (scman-intrinsic/start-action)
+       (scman-internal/start-action)
 
        (scman-internal/reset-action-values)
        (begin body ...)
@@ -48,21 +51,29 @@
 
 ;; Actions
 
-(define (walk)
-  (scman-internal/perform-action
-   (set! scman-intrinsic/action-to-perform 'walk)))
+(define* (walk #:optional (n 1))
+  (repeat n
+    (scman-internal/perform-action
+      (set! scman-intrinsic/action-to-perform 'walk))))
 
 (define (turn direction)
   (case direction
     ('right
      (scman-internal/perform-action
-      (set! scman-intrinsic/action-to-perform 'turn-right)))
+       (set! scman-intrinsic/action-to-perform 'turn-right)))
     ('left
      (scman-internal/perform-action
-      (set! scman-intrinsic/action-to-perform 'turn-left)))
+       (set! scman-intrinsic/action-to-perform 'turn-left)))
+    ('opposite
+     (repeat 2 (turn 'right)))
     (else (error "Cannot turn in that direction!"))))
 
 (define (status message)
   (scman-internal/perform-action
-   (set! scman-intrinsic/action-to-perform 'set-status)
-   (set! scman-intrinsic/action-argument message)))
+    (set! scman-intrinsic/action-to-perform 'set-status)
+    (set! scman-intrinsic/action-argument message)))
+
+(define* (go-back #:optional (n 1))
+  (turn 'opposite)
+  (walk n)
+  (turn 'opposite))

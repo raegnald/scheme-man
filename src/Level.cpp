@@ -84,6 +84,7 @@ bool Level::load(void) {
           if (object_tile.ID == 24) {
             auto coin = std::make_unique<Coin>(pos, &geometry);
             objects.push_back(std::move(coin));
+            total_coins++;
           }
 
           // Star
@@ -96,13 +97,20 @@ bool Level::load(void) {
     }
   }
 
+  debug std::println("Loaded {} level objects", objects.size());
+
+  // Make sure player is at origin
+  player.position.setOrigin(sf::Vector2f(0, 0));
+
+  interpreter.initialise();
+
   return true;
 }
 
 void Level::update(float dt) {
   // Update level geometry (specially scale)
   geometry.update(dt);
-  setScale(geometry.scale); // ensures scale is bounded
+  setScale(geometry.scale); // ensures scale is between min and max
 
   interpreter.update(this);
 

@@ -42,6 +42,9 @@ public:
 
   sf::Color background = sf::Color(0xd8, 0xeb, 0xf9);
 
+  // Level progress
+  float meters_travelled{0};
+  size_t total_coins{0};
 
   explicit Level(std::filesystem::path t_tilemap) : tilemap(t_tilemap) {
     if (!load())
@@ -83,6 +86,8 @@ public:
 
     return std::nullopt;
   }
+
+  const sf::Font &getFont(void) const { return m_font; }
 
 private:
   bool loadTextures(void);

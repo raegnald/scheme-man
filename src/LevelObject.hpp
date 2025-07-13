@@ -5,12 +5,12 @@
 
 #include "LevelGeometry.hpp"
 #include "Interpolated.hpp"
+#include "debug.hpp"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/System/Vector2.hpp>
-#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <tmxlite/Object.hpp>
@@ -23,8 +23,9 @@ struct LevelObject : public sf::Drawable {
   LevelGeometry *geometry;
 
   LevelObject(void) {}
+  explicit LevelObject(LevelGeometry *t_geometry) : geometry(t_geometry) {}
   explicit LevelObject(Cannonical t_position, LevelGeometry *t_geometry)
-    : position(t_position), geometry(t_geometry) {}
+      : position(t_position), geometry(t_geometry) {}
 
   void setPosition(Cannonical p) { position.start = p; }
 
@@ -91,9 +92,13 @@ public:
   bool flip = false;
 
 
+  explicit AnimatedObject(LevelGeometry *t_geometry) : LevelObject(t_geometry) {
+    opacity.setDuration(0.2);
+  }
+
   explicit AnimatedObject(sf::Vector2f t_position, LevelGeometry *t_geometry)
       : LevelObject(t_position, t_geometry) {
-    opacity.setDuration(0.1);
+    opacity.setDuration(0.2);
   }
 
   void addFrame(std::filesystem::path texturePath) {
@@ -112,7 +117,6 @@ public:
 
   void setFrameDuration(float seconds) { m_frameDuration = seconds; }
   void setScale(float t_scale) { scale = t_scale; }
-
 
   sf::Vector2u getSize(void) const {
     return frameTextures[currentFrameIndex].getSize();
@@ -164,7 +168,9 @@ private:
 public:
   enum LookingAt { Xpos, Ypos, Xneg, Yneg };
 
-  size_t coinsCollected = 0;
+  size_t coins_collected = 0;
+  size_t meters_travelled = 0;
+
   bool reachedStar = false;
   bool walking = false;
   LookingAt direction{Xpos};
@@ -172,7 +178,8 @@ public:
   bool needsUpdate = true;
 
   explicit Player(LevelGeometry *geometry)
-      : AnimatedObject(position, geometry) {
+      : AnimatedObject(geometry) {
+
     position.setDuration(0.25); // transition time
     position.setFunction(Interpolating_function::Ease_out_quad);
 
@@ -295,6 +302,7 @@ public:
   void walk(void) {
     needsUpdate = true;
     walking = true;
+    meters_travelled++;
     position.start = position.end;
     sf::Vector2f target(position.start.x + ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0),
                         position.start.y + ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0));
@@ -362,15 +370,16 @@ struct Coin : public AnimatedObject, public Collectable {
     AnimatedObject::update(player);
 
     if (player.position.end == this->position.getValue()) {
-      collect();
+      if (!collect())
+        return;
+
+      player.coins_collected++;
       opacity.setTarget(0);
-      player.coinsCollected++;
     }
   }
 
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
-    // if (!collected)
     AnimatedObject::draw(target, states);
   }
 };
@@ -409,7 +418,6 @@ struct Star : public AnimatedObject, public Collectable {
 
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
-    // if (!collected)
     AnimatedObject::draw(target, states);
   }
 };

@@ -13,7 +13,7 @@ constexpr float max_level_scale = 1.5;
 
 struct LevelGeometry {
   sf::Vector2u dimensions;
-  sf::Vector2f origin;
+  sf::Vector2f origin{0, 0};
   sf::Vector2u tile_size = sf::Vector2u(512, 256);
   Kinetic<float> scale{1.0};
 

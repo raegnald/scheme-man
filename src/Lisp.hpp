@@ -43,7 +43,11 @@ private:
   }
 
 public:
-  Lisp(void) : m_guile_thread([this]() { this->m_execute_guile(); }) {
+  void initialise(void) {
+    if (m_guile_thread.joinable())
+      return;
+
+    m_guile_thread = std::thread([this]() { this->m_execute_guile(); });
     m_guile_thread.detach();
   }
 

@@ -6,6 +6,7 @@
 #include <print>
 #include "Lisp.hpp"
 #include "Level.hpp"
+#include "debug.hpp"
 
 std::mutex performing_action;
 
