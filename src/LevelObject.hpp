@@ -69,7 +69,7 @@ struct TexturedObject : public LevelObject {
 
     sprite.setPosition(getPosition());
 
-    sprite.setOrigin(static_cast<float>(0.5) * sf::Vector2f(texture.getSize()));
+    sprite.setOrigin(0.5f * sf::Vector2f(texture.getSize()));
     target.draw(sprite);
   };
 };
@@ -148,7 +148,7 @@ public:
     sf::Sprite sprite(frameTextures[currentFrameIndex]);
 
     sprite.setPosition(getPosition());
-    sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
+    sprite.setOrigin(0.5f * sprite.getGlobalBounds().size);
     sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
 
     sprite.setColor(sf::Color(

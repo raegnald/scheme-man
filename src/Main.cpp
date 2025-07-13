@@ -23,8 +23,7 @@ constexpr auto victoryBackground = sf::Color(0xd9, 0xf9, 0xdf);
 constexpr auto failureBackground = sf::Color(0xf2, 0xc0, 0xb0);
 
 sf::Vector3f vectorFromColor(sf::Color color) {
-  return static_cast<float>(1.0 / 255) *
-         sf::Vector3f(color.r, color.g, color.b);
+  return (1.0f / 255) * sf::Vector3f(color.r, color.g, color.b);
 }
 
 sf::Color colorFromVector(sf::Vector3f v) {

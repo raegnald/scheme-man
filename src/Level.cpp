@@ -124,7 +124,7 @@ void Level::update(float dt) {
 void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
   // Floor tiles
   sf::Sprite sprite(textures[0]);
-  sprite.setOrigin(static_cast<float>(0.5) * sprite.getGlobalBounds().size);
+  sprite.setOrigin(0.5f * sprite.getGlobalBounds().size);
 
   for (auto &layer : map.getLayers()) {
     if (layer->getType() == tmx::Layer::Type::Tile &&
@@ -178,9 +178,8 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
           "../assets/Objects/Light-bulb/light-bulb.png");
       sf::Sprite lightBulb(lightBulb_texture);
       lightBulb.setPosition(players_head);
-      lightBulb.setOrigin(static_cast<float>(0.5) * lightBulb.getGlobalBounds().size);
-      lightBulb.setScale(static_cast<float>(1.5 * geometry.scale) *
-                         sf::Vector2f(1, 1));
+      lightBulb.setOrigin(0.5f * lightBulb.getGlobalBounds().size);
+      lightBulb.setScale(1.5f * geometry.scale * sf::Vector2f(1, 1));
 
       target.draw(lightBulb);
     } else {
@@ -191,7 +190,7 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
       text.setOutlineThickness(2.0);
 
       text.setPosition(players_head);
-      text.setOrigin(static_cast<float>(0.5) * text.getGlobalBounds().size);
+      text.setOrigin(0.5f * text.getGlobalBounds().size);
       text.setScale(2 * geometry.scale * sf::Vector2f(1, 1));
 
       target.draw(text);

@@ -28,9 +28,9 @@ struct LevelGeometry {
   /// Convert a coordinate into a projected, scaled, position in the
   /// isometric space of the level.
   template <typename T> Isometric isometric(sf::Vector2<T> u) const {
-    return origin +
-      scale.getValue() * sf::Vector2f(0.5 * (u.x - u.y) * tile_size.x,
-                                      0.5 * (u.x + u.y) * tile_size.y);
+    return origin + 0.5f * scale.getValue() *
+                        sf::Vector2f((u.x - u.y) * tile_size.x,
+                                     (u.x + u.y) * tile_size.y);
   }
 
   /// Get the normalised, cannonical (with basis vectors i, j)
