@@ -17,14 +17,10 @@ endif ()
 # Enable compile_commands.json for tooling
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(PkgConfig REQUIRED)
+# SFML
+add_subdirectory(lib/sfml)
 
-# Find SFML using pkg-config
-pkg_check_modules(SFML REQUIRED IMPORTED_TARGET
-  sfml-system
-  sfml-graphics
-  sfml-window
-)
+find_package(PkgConfig REQUIRED)
 
 # Find Guile using pkg-config
 pkg_check_modules(GUILE REQUIRED IMPORTED_TARGET
@@ -42,7 +38,7 @@ add_executable(scman ${SOURCES})
 
 # Link against SFML and tmxlite
 target_link_libraries(scman PRIVATE
-  PkgConfig::SFML
+  sfml-system sfml-graphics sfml-window
   PkgConfig::GUILE
   tmxlite
 )

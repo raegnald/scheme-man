@@ -1,3 +1,6 @@
 [submodule "lib/tmxlite"]
 	path = lib/tmxlite
 	url = https://github.com/fallahn/tmxlite.git
+[submodule "lib/sfml"]
+	path = lib/sfml
+	url = https://github.com/SFML/SFML

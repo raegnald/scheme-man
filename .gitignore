@@ -5,4 +5,3 @@ compile_flags.txt
 *.app
 .DS_Store
 .cache/
-lib/
