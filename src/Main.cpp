@@ -192,7 +192,8 @@ private:
     if (!gameEnd) {
       const auto [x, y] = level.player.position.getValue();
       const auto [w, h] = level.geometry.dimensions;
-      if (x < 0 || y < 0 || x >= w || y >= h) {
+      if (x < 0 || y < 0 || x >= w || y >= h ||
+          !level.isFloor(level.player.position.end)) {
         gameEnd = true;
         currentBackground.setTarget(vectorFromColor(failureBackground));
       }

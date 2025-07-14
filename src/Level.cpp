@@ -218,3 +218,28 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
     }
   }
 }
+
+
+int Level::getFloorID(Cannonical coord) const {
+  for (auto &layer : map.getLayers()) {
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Floor") {
+      const auto *tile_layer =
+        dynamic_cast<const tmx::TileLayer *>(layer.get());
+      const auto &tiles = tile_layer->getTiles();
+      const auto layer_size = tile_layer->getSize();
+
+      if (coord.x < 0 || coord.y < 0 || coord.x >= layer_size.x ||
+          coord.y >= layer_size.y)
+        return 0;
+
+      return tiles[coord.x + coord.y * layer_size.x].ID;
+    }
+  }
+
+  return 0;
+}
+
+bool Level::isFloor(Cannonical coord) const {
+  return getFloorID(coord) != 0;
+}

@@ -32,7 +32,6 @@ public:
 
   LevelGeometry geometry;
 
-
   std::vector<sf::Texture> textures;
 
   std::vector<std::unique_ptr<LevelObject>> objects;
@@ -88,6 +87,9 @@ public:
   }
 
   const sf::Font &getFont(void) const { return m_font; }
+
+  int getFloorID(Cannonical coord) const;
+  bool isFloor(Cannonical coord) const;
 
 private:
   bool loadTextures(void);
