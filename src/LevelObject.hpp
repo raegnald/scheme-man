@@ -122,7 +122,7 @@ public:
     return frameTextures[currentFrameIndex].getSize();
   }
 
-  virtual void update(Player &player) override {
+  void updateAnimation(void) {
     if (frameTextures.empty())
       return;
 
@@ -140,6 +140,8 @@ public:
     }
   }
 
+  virtual void update(Player &player) override { updateAnimation(); }
+
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
     if (frameTextures.empty())
@@ -149,7 +151,8 @@ public:
 
     sprite.setPosition(getPosition());
     sprite.setOrigin(0.5f * sprite.getGlobalBounds().size);
-    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
+    if (geometry)
+      sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
 
     sprite.setColor(sf::Color(
         255, 255, 255, std::clamp(static_cast<int>(255 * opacity), 0, 255)));
@@ -327,7 +330,8 @@ public:
 
     const auto size = sprite.getGlobalBounds().size;
     sprite.setOrigin(sf::Vector2f(0.5 * size.x, 0.75 * size.y));
-    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
+    if (geometry)
+      sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
     target.draw(sprite);
   }
 };

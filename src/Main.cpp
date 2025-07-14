@@ -49,7 +49,7 @@ constexpr auto window_state_file_magic = "scman";
 struct Game {
 private:
   sf::RenderWindow window;
-  sf::View view;
+  sf::View level_view, overlay_view;
 
   sf::Clock clock;
 
@@ -85,13 +85,12 @@ private:
   void saveWindowState(void) const {
     std::ofstream state(window_state_file);
 
-    state << window_state_file_magic << " ";
+    auto [x, y] = window.getPosition();
+    auto [w, h] = window.getSize();
 
-    auto pos = window.getPosition();
-    state << pos.x << " " << pos.y << " ";
-
-    auto size = window.getSize();
-    state << size.x << " " << size.y;
+    state << window_state_file_magic << " "
+          << x << " " << y << " "
+          << w << " " << h;
   }
 
   void handleMouseDrag(const std::optional<sf::Event> &event) {
@@ -108,8 +107,8 @@ private:
         const auto newPos = window.mapPixelToCoords(dragged->position);
         const auto deltaPos = oldPos - newPos;
 
-        viewCenter.setTarget(view.getCenter() + deltaPos);
-        window.setView(view);
+        viewCenter.setTarget(level_view.getCenter() + deltaPos);
+        window.setView(level_view);
       }
     }
   }
@@ -132,6 +131,11 @@ private:
   }
 
   void handleEvents(void) {
+    // We set the view to the level in case any other views have been
+    // set, since the mouse drag and zoom actions depend on the main
+    // view (i.e. the level view) being set.
+    window.setView(level_view);
+
     while (const auto event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
         saveWindowState();
@@ -139,8 +143,9 @@ private:
       }
 
       if (const auto *resized = event->getIf<sf::Event::Resized>()) {
-        view.setSize(sf::Vector2f(resized->size));
-        window.setView(view);
+        level_view.setSize(sf::Vector2f(resized->size));
+        overlay_view.setSize(sf::Vector2f(resized->size));
+        window.setView(level_view);
       }
 
       handleMouseDrag(event);
@@ -197,7 +202,7 @@ private:
 public:
   Game(std::filesystem::path &level_file)
       : window(sf::VideoMode(default_window_size), default_window_title),
-        view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
+        level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
         currentBackground(vectorFromColor(level.background)),
         level(level_file) {
 
@@ -232,13 +237,23 @@ public:
       viewCenter.setTarget(playerCenter);
     }
 
-    view.setCenter(viewCenter);
+    level_view.setCenter(viewCenter);
+
+    // Makes the level view have the same center as the window center,
+    // plus the fact that the size is the whole window, it makes the
+    // overlay view take up all the window.
+    overlay_view.setCenter(sf::Vector2f(window.getSize()) * 0.5f);
   }
 
   void draw(void) {
     window.clear(colorFromVector(currentBackground));
-    window.setView(view);
+
+    window.setView(level_view);
     window.draw(level);
+
+    window.setView(overlay_view);
+    window.draw(hud_overlay);
+
     window.display();
   }
 };
