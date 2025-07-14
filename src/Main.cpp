@@ -36,7 +36,12 @@ sf::Color colorFromVector(sf::Vector3f v) {
 constexpr sf::Vector2u default_window_size{600, 450};
 constexpr sf::Vector2u minimum_window_size{300, 225};
 
-constexpr auto default_window_title = "Scheme-Man";
+constexpr auto default_window_title =
+#if defined __DEBUG__
+  "Scheme-Man (DEBUG)";
+#else
+  "Scheme-Man";
+#endif
 
 constexpr auto window_state_file = ".scman_window_state";
 constexpr auto window_state_file_magic = "scman";
@@ -57,8 +62,6 @@ private:
 
   Interpolated<sf::Vector3f> currentBackground;
   Interpolated<sf::Vector2f> viewCenter{sf::Vector2f(0, 0)};
-
-  Coin testObject{sf::Vector2f(0, 0), &level.geometry};
 
   void loadWindowState(void) {
     std::ifstream state(window_state_file);
@@ -200,7 +203,7 @@ public:
 
     loadWindowState();
 
-    window.setFramerateLimit(60);
+    window.setVerticalSyncEnabled(true);
     window.setMinimumSize(minimum_window_size);
 
     currentBackground.setFunction(Interpolating_function::Ease_out_quad);
@@ -220,7 +223,6 @@ public:
     // Update level
     const auto elapsed = clock.restart().asSeconds();
     level.update(elapsed);
-    testObject.update(level.player);
 
     checkGameEnd();
 
@@ -237,7 +239,6 @@ public:
     window.clear(colorFromVector(currentBackground));
     window.setView(view);
     window.draw(level);
-    window.draw(testObject);
     window.display();
   }
 };
