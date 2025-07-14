@@ -1,9 +1,11 @@
 #include "Level.hpp"
 #include "Interpolated.hpp"
 #include "LevelGeometry.hpp"
+#include "tmxlite/ObjectGroup.hpp"
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <tmxlite/Map.hpp>
@@ -65,12 +67,34 @@ bool Level::load(void) {
 
   const auto tilesets = map.getAnimatedTiles();
 
-  // Load level objects
   for (auto &layer : map.getLayers()) {
+
+    // Positions layer
+    if (layer->getType() == tmx::Layer::Type::Object &&
+        layer->getName() == "Positions") {
+
+
+      const auto *object_group =
+          dynamic_cast<const tmx::ObjectGroup *>(layer.get());
+      const auto objects = object_group->getObjects();
+
+      for (const auto &object : objects) {
+        auto name = object.getName();
+        auto [x, y] = object.getPosition();
+        Cannonical c = geometry.cannonical<float>(geometry.scale.getValue() *
+                                                  sf::Vector2f(x, y));
+
+        if (name == "start") {
+          player.position.setOrigin({std::round(c.x), std::round(c.y)});
+        }
+      }
+    }
+
+    // Load level objects
     if (layer->getType() == tmx::Layer::Type::Tile &&
         layer->getName() == "Objects") {
       const auto *tile_layer =
-        dynamic_cast<const tmx::TileLayer *>(layer.get());
+          dynamic_cast<const tmx::TileLayer *>(layer.get());
       const auto &object_tiles = tile_layer->getTiles();
       const auto layer_size =
         sf::Vector2u(tile_layer->getSize().x, tile_layer->getSize().y);
@@ -88,8 +112,6 @@ bool Level::load(void) {
           try {
             const auto tile = tilesets.at(object_tile.ID);
             const auto object_class = tile.className;
-
-            std::println("object_class: {}", object_class);
 
             // Coin
             if (object_class == "coin") {
@@ -119,9 +141,6 @@ bool Level::load(void) {
   }
 
   debug std::println("Loaded {} level objects", objects.size());
-
-  // Make sure player is at origin
-  player.position.setOrigin(sf::Vector2f(0, 0));
 
   interpreter.initialise();
 

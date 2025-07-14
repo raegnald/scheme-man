@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="isometric" renderorder="right-down" width="7" height="7" tilewidth="512" tileheight="256" infinite="0" nextlayerid="7" nextobjectid="36">
+<map version="1.10" tiledversion="1.11.0" orientation="isometric" renderorder="right-down" width="7" height="7" tilewidth="512" tileheight="256" infinite="0" nextlayerid="9" nextobjectid="42">
  <tileset firstgid="1" source="../Floors/Floors.tsx"/>
  <tileset firstgid="11" source="../Objects/Star/Star.tsx"/>
  <tileset firstgid="24" source="../Objects/Coin/Coin.tsx"/>
@@ -25,4 +25,12 @@
 0,0,0,0,0,0,0
 </data>
  </layer>
+ <objectgroup id="8" name="Positions">
+  <object id="39" name="start" x="376.727" y="374.788">
+   <properties>
+    <property name="lookingat" value="+X"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
 </map>
