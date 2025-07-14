@@ -63,6 +63,8 @@ bool Level::load(void) {
 
   geometry.scale.setMinAcceleration(1);
 
+  const auto tilesets = map.getAnimatedTiles();
+
   // Load level objects
   for (auto &layer : map.getLayers()) {
     if (layer->getType() == tmx::Layer::Type::Tile &&
@@ -80,17 +82,36 @@ bool Level::load(void) {
           Cannonical pos(x, y);
           const auto &object_tile = object_tiles[x + y * layer_size.x];
 
-          // Coin
-          if (object_tile.ID == 24) {
-            auto coin = std::make_unique<Coin>(pos, &geometry);
-            objects.push_back(std::move(coin));
-            total_coins++;
-          }
+          if (object_tile.ID == 0)
+            continue;
 
-          // Star
-          if (object_tile.ID == 11) {
-            auto coin = std::make_unique<Star>(pos, &geometry);
-            objects.push_back(std::move(coin));
+          try {
+            const auto tile = tilesets.at(object_tile.ID);
+            const auto object_class = tile.className;
+
+            std::println("object_class: {}", object_class);
+
+            // Coin
+            if (object_class == "coin") {
+              auto coin = std::make_unique<Coin>(pos, &geometry);
+              objects.push_back(std::move(coin));
+              total_coins++;
+            }
+
+            // Star
+            else if (object_class == "star") {
+              auto coin = std::make_unique<Star>(pos, &geometry);
+              objects.push_back(std::move(coin));
+            }
+
+            else {
+              std::println(stderr, "Unknown class name {} for tile",
+                           object_class);
+            }
+
+          } catch (std::out_of_range _) {
+            std::println("Unknown tile ID {}", object_tile.ID);
+            continue;
           }
         }
       }
