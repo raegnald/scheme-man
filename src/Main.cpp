@@ -6,6 +6,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <algorithm>
 #include <cstdio>
+#include <fstream>
 #include <optional>
 #include <tmxlite/Map.hpp>
 #include <cstdlib>
@@ -37,6 +38,9 @@ constexpr sf::Vector2u minimum_window_size{300, 225};
 
 constexpr auto default_window_title = "Scheme-Man";
 
+constexpr auto window_state_file = ".scman_window_state";
+constexpr auto window_state_file_magic = "scman";
+
 struct Game {
 private:
   sf::RenderWindow window;
@@ -55,6 +59,37 @@ private:
   Interpolated<sf::Vector2f> viewCenter{sf::Vector2f(0, 0)};
 
   Coin testObject{sf::Vector2f(0, 0), &level.geometry};
+
+  void loadWindowState(void) {
+    std::ifstream state(window_state_file);
+    std::string magic;
+
+    state >> magic;
+    if (magic != window_state_file_magic)
+      return;
+
+    sf::Vector2i window_position;
+    state >> window_position.x;
+    state >> window_position.y;
+    window.setPosition(window_position);
+
+    sf::Vector2u window_size;
+    state >> window_size.x;
+    state >> window_size.y;
+    window.setSize(window_size);
+  }
+
+  void saveWindowState(void) const {
+    std::ofstream state(window_state_file);
+
+    state << window_state_file_magic << " ";
+
+    auto pos = window.getPosition();
+    state << pos.x << " " << pos.y << " ";
+
+    auto size = window.getSize();
+    state << size.x << " " << size.y;
+  }
 
   void handleMouseDrag(const std::optional<sf::Event> &event) {
     if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>()) {
@@ -96,6 +131,7 @@ private:
   void handleEvents(void) {
     while (const auto event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
+        saveWindowState();
         window.close();
       }
 
@@ -162,15 +198,17 @@ public:
         currentBackground(vectorFromColor(level.background)),
         level(level_file) {
 
-      window.setFramerateLimit(60);
-      window.setMinimumSize(minimum_window_size);
+    loadWindowState();
 
-      currentBackground.setFunction(Interpolating_function::Ease_out_quad);
+    window.setFramerateLimit(60);
+    window.setMinimumSize(minimum_window_size);
 
-      viewCenter.setFunction(Interpolating_function::Ease_out_quad);
-      viewCenter.setDuration(0.1);
+    currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
-      level.setScale(0.25);
+    viewCenter.setFunction(Interpolating_function::Ease_out_quad);
+    viewCenter.setDuration(0.1);
+
+    level.setScale(0.25);
   }
 
   bool running(void) { return window.isOpen(); }
