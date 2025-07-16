@@ -52,4 +52,6 @@ public:
   }
 
   void update(Level *level);
+
+  void shutdown(void);
 };

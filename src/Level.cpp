@@ -278,5 +278,8 @@ void Level::reset(void) {
   for (auto &object : objects) {
     object->reset();
   }
+}
 
+void Level::shutdown(void) {
+  interpreter.shutdown();
 }

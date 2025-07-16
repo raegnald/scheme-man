@@ -97,6 +97,8 @@ public:
   // Resets level objects (including player)
   void reset(void);
 
+  void shutdown(void);
+
 private:
   bool loadTextures(void);
 };

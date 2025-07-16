@@ -60,7 +60,7 @@ private:
   HUD hud_overlay{&level};
 
   Interpolated<sf::Vector3f> currentBackground;
-  Interpolated<sf::Vector2f> viewCenter{sf::Vector2f(0, 0)};
+  Interpolated<sf::Vector2f> view_center{sf::Vector2f(0, 0)};
 
   void loadWindowState(void) {
     std::ifstream state(window_state_file);
@@ -79,17 +79,23 @@ private:
     state >> window_size.x;
     state >> window_size.y;
     window.setSize(window_size);
+
+    float scale;
+    if (state >> scale)
+      level.geometry.scale.setValue(scale);
   }
 
   void saveWindowState(void) const {
     std::ofstream state(window_state_file);
 
-    auto [x, y] = window.getPosition();
-    auto [w, h] = window.getSize();
+    const auto [x, y] = window.getPosition();
+    const auto [w, h] = window.getSize();
+    const auto scale = level.geometry.scale.getValue();
 
     state << window_state_file_magic << " "
           << x << " " << y << " "
-          << w << " " << h;
+          << w << " " << h << " "
+          << scale;
   }
 
   void handleMouseDrag(const std::optional<sf::Event> &event) {
@@ -106,7 +112,7 @@ private:
         const auto newPos = window.mapPixelToCoords(dragged->position);
         const auto deltaPos = oldPos - newPos;
 
-        viewCenter.setTarget(level_view.getCenter() + deltaPos);
+        view_center.setTarget(level_view.getCenter() + deltaPos);
         window.setView(level_view);
       }
     }
@@ -136,6 +142,7 @@ private:
     while (const auto event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
         saveWindowState();
+        level.shutdown();
         window.close();
       }
 
@@ -214,9 +221,9 @@ private:
     const auto player_center = level.geometry.isometric(pos);
 
     if (instantly)
-      viewCenter.setOrigin(player_center);
+      view_center.setOrigin(player_center);
     else
-      viewCenter.setTarget(player_center);
+      view_center.setTarget(player_center);
   }
 
 public:
@@ -226,6 +233,8 @@ public:
         currentBackground(vectorFromColor(level.background)),
         level(level_file) {
 
+    level.setScale(0.25);
+
     loadWindowState();
 
     window.setVerticalSyncEnabled(true);
@@ -233,10 +242,9 @@ public:
 
     currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
-    viewCenter.setFunction(Interpolating_function::Ease_out_quad);
-    viewCenter.setDuration(0.1);
+    view_center.setFunction(Interpolating_function::Ease_out_quad);
+    view_center.setDuration(0.1);
 
-    level.setScale(0.25);
     centerPlayerInWindow(true);
   }
 
@@ -255,16 +263,17 @@ public:
     // When player is moving and not visible, center the view relative
     // to its position.
     if (level.player.walking) {
+      constexpr auto margin_percentage = 0.4f;
       const sf::FloatRect view_rect(level_view.getCenter() -
-                                        level_view.getSize() / 2.0f,
-                                    level_view.getSize());
+                                    level_view.getSize() * (1.0f - margin_percentage) / 2.0f,
+                                    level_view.getSize() * (1.0f - margin_percentage));
       const bool visible = view_rect.contains(
           level.geometry.isometric(level.player.position.getValue()));
       if (!visible)
         centerPlayerInWindow();
     }
 
-    level_view.setCenter(viewCenter);
+    level_view.setCenter(view_center);
 
     // Makes the level view have the same center as the window center,
     // plus the fact that the size is the whole window, it makes the

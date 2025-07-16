@@ -61,3 +61,7 @@ void Lisp::update(Level *level) {
 
   performing_action.unlock();
 }
+
+void Lisp::shutdown(void) {
+  // scm_call_0(scm_variable_ref(scm_c_lookup("exit")));
+}
