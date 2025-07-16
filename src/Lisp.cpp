@@ -53,6 +53,8 @@ void Lisp::update(Level *level) {
       char *status = scm_to_latin1_string(scm_variable_ref(m_action_arg));
       level->setStatus(status);
     }
+  } else if (strcmp(action, "reset-level") == 0) {
+    level->reset();
   }
 
   free(action);

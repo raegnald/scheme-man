@@ -55,7 +55,6 @@ private:
 
   sf::Vector2f oldPos;
   bool mouse_clicked = false;
-  bool gameEnd = false;
 
   Level level;
   HUD hud_overlay{&level};
@@ -149,22 +148,34 @@ private:
       handleMouseDrag(event);
       handleMouseScroll(event);
 
-      debug if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+      if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
         if (!key->control)
           continue;
 
         switch (key->code) {
+        case sf::Keyboard::Key::R:
+          level.reset();
+          centerPlayerInWindow(false);
+          level.setStatus("Reset level");
+          break;
+
         case sf::Keyboard::Key::Space:
-          level.player.walk();
-          level.setStatus("Walking (debug)");
+          debug {
+            level.player.walk();
+            level.setStatus("Walking (debug)");
+          }
           break;
         case sf::Keyboard::Key::C:
-          level.player.turnClockwise();
-          level.setStatus("Turning right (debug)");
+          debug {
+            level.player.turnClockwise();
+            level.setStatus("Turning right (debug)");
+          }
           break;
         case sf::Keyboard::Key::X:
-          level.player.turnAnticlockwise();
-          level.setStatus("Turning left (debug)");
+          debug {
+            level.player.turnAnticlockwise();
+            level.setStatus("Turning left (debug)");
+          }
         default:
           break;
         }
@@ -182,25 +193,25 @@ private:
   }
 
   void checkGameEnd(void) {
-    if (!gameEnd && level.player.reachedStar) {
-      gameEnd = true;
+    if (level.active && level.player.reachedStar) {
+      level.active = false;
       currentBackground.setTarget(vectorFromColor(victoryBackground));
     }
 
-    if (!gameEnd) {
+    if (level.active) {
       const auto [x, y] = level.player.position.getValue();
       const auto [w, h] = level.geometry.dimensions;
       if (x < 0 || y < 0 || x >= w || y >= h ||
           !level.isFloor(level.player.position.end)) {
-        gameEnd = true;
+        level.active = false;
         currentBackground.setTarget(vectorFromColor(failureBackground));
       }
     }
   }
 
   void centerPlayerInWindow(bool instantly = false) {
-    const auto player_center =
-        level.geometry.isometric(level.player.position.getValue());
+    const auto pos = level.player.position.getValue();
+    const auto player_center = level.geometry.isometric(pos);
 
     if (instantly)
       viewCenter.setOrigin(player_center);
@@ -241,8 +252,17 @@ public:
 
     checkGameEnd();
 
-    if (level.player.walking)
-      centerPlayerInWindow(false);
+    // When player is moving and not visible, center the view relative
+    // to its position.
+    if (level.player.walking) {
+      const sf::FloatRect view_rect(level_view.getCenter() -
+                                        level_view.getSize() / 2.0f,
+                                    level_view.getSize());
+      const bool visible = view_rect.contains(
+          level.geometry.isometric(level.player.position.getValue()));
+      if (!visible)
+        centerPlayerInWindow();
+    }
 
     level_view.setCenter(viewCenter);
 

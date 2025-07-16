@@ -1,8 +1,3 @@
-;; Posicionarme
-(walk)
-(turn 'right)
-(walk)
-
 (status "Me lo paso a la primera")
 
 ;; Completar nivel

@@ -79,14 +79,22 @@ bool Level::load(void) {
       const auto objects = object_group->getObjects();
 
       for (const auto &object : objects) {
-        auto name = object.getName();
+        const auto &name = object.getName();
         auto [x, y] = object.getPosition();
 
-        const auto p = geometry.isometricProject(sf::Vector2f(x, y));
-        const Cannonical c = geometry.cannonical<float>(p);
-
         if (name == "start") {
-          player.position.setOrigin({std::round(c.x), std::round(c.y)});
+          const auto p = geometry.isometricProject(sf::Vector2f(x, y));
+          const Cannonical c = geometry.cannonical<float>(p);
+          player.start_position = {std::round(c.x), std::round(c.y)};
+          player.position.setOrigin(player.start_position);
+
+          for (const auto &prop : object.getProperties()) {
+            const auto &name = prop.getName();
+            if (name == "lookingat") {
+              const auto &dir_str = prop.getStringValue();
+              player.direction = Player::parseDirection(dir_str);
+            }
+          }
         }
       }
     }
@@ -262,4 +270,13 @@ int Level::getFloorID(Cannonical coord) const {
 
 bool Level::isFloor(Cannonical coord) const {
   return getFloorID(coord) != 0;
+}
+
+void Level::reset(void) {
+  active = true;
+  player.reset();
+  for (auto &object : objects) {
+    object->reset();
+  }
+
 }

@@ -13,7 +13,8 @@
 #include "LevelGeometry.hpp"
 #include "LevelObject.hpp"
 #include "Lisp.hpp"
-#include "SFML/Graphics/CircleShape.hpp"
+
+constexpr auto default_level_background = sf::Color(0xd8, 0xeb, 0xf9);
 
 struct Level : public sf::Drawable {
 private:
@@ -38,9 +39,10 @@ public:
   std::vector<std::unique_ptr<LevelObject>> objects;
   Player player{&geometry};
 
+  // If not active, player has lost
   bool active = true;
 
-  sf::Color background = sf::Color(0xd8, 0xeb, 0xf9);
+  sf::Color background = default_level_background;
 
   // Level progress
   float meters_travelled{0};
@@ -91,6 +93,9 @@ public:
 
   int getFloorID(Cannonical coord) const;
   bool isFloor(Cannonical coord) const;
+
+  // Resets level objects (including player)
+  void reset(void);
 
 private:
   bool loadTextures(void);

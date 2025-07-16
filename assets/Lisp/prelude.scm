@@ -28,6 +28,13 @@
        (begin body ...)
        '())]))
 
+;; State of Scheme-Man that only Scheme has to know about
+
+(define scman/solution-file '())
+
+(define (scman/evaluate-solution-file)
+  (when scman/solution-file
+    (load scman/solution-file)))
 
 ;; Nice little macros that aid in solving levels
 
@@ -39,6 +46,17 @@
        (when (> count 0)
          body ...
          (loop (1- count)))))))
+
+;; Loading a solution to a level
+
+(define (solution file)
+  (reset-level)
+  (set! scman/solution-file file)
+  (scman/evaluate-solution-file))
+
+(define (restart)
+  (reset-level)
+  (scman/evaluate-solution-file))
 
 ;; Actions
 
@@ -68,3 +86,7 @@
   (turn 'opposite)
   (walk n)
   (turn 'opposite))
+
+(define (reset-level)
+  (scman-internal/perform-action
+    (set! scman-intrinsic/action-to-perform 'reset-level)))

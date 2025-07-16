@@ -13,6 +13,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <cstdlib>
 #include <filesystem>
+#include <print>
 #include <tmxlite/Object.hpp>
 #include <vector>
 
@@ -46,6 +47,8 @@ struct LevelObject : public sf::Drawable {
     point.setFillColor(sf::Color::Magenta);
     target.draw(point);
   };
+
+  virtual void reset(void) {}
 };
 
 struct TexturedObject : public LevelObject {
@@ -171,6 +174,8 @@ private:
 public:
   enum LookingAt { Xpos, Ypos, Xneg, Yneg };
 
+  sf::Vector2f start_position;
+
   size_t coins_collected = 0;
   size_t meters_travelled = 0;
 
@@ -179,6 +184,16 @@ public:
   LookingAt direction{Xpos};
 
   bool needsUpdate = true;
+
+  static LookingAt parseDirection(const std::string &dir) {
+    if (dir == "+X") return Xpos;
+    if (dir == "-X") return Xneg;
+    if (dir == "+Y") return Ypos;
+    if (dir == "-Y") return Yneg;
+
+    debug std::println(stderr, "Invalid player direction {}", dir);
+    return Xpos;
+  }
 
   explicit Player(LevelGeometry *geometry)
       : AnimatedObject(geometry) {
@@ -334,6 +349,12 @@ public:
       sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
     target.draw(sprite);
   }
+
+  void reset(void) final override {
+    position.setOrigin(start_position);
+    coins_collected = 0;
+    meters_travelled = 0;
+  }
 };
 
 
@@ -386,6 +407,11 @@ struct Coin : public AnimatedObject, public Collectable {
                     sf::RenderStates states) const override {
     AnimatedObject::draw(target, states);
   }
+
+  void reset(void) override {
+    collected = false;
+    opacity.setTarget(1);
+  }
 };
 
 struct Star : public AnimatedObject, public Collectable {
@@ -423,5 +449,10 @@ struct Star : public AnimatedObject, public Collectable {
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
     AnimatedObject::draw(target, states);
+  }
+
+  void reset(void) override {
+    collected = false;
+    opacity.setTarget(1);
   }
 };
