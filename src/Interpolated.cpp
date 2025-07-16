@@ -1,5 +1,7 @@
 #include "Interpolated.hpp"
 
+constexpr float PI = 3.141592653589793238462643383279502884197169399;
+
 float interpolate(Interpolating_function type, float x) {
   switch (type) {
   case Linear:

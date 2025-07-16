@@ -4,13 +4,6 @@
 
 ;; Internals
 
-;;; A mutex that is set in C++ that signals this Scheme code that it
-;;; has access to all level-related variables. When this mutex
-;;; `scman-intrinsic/level-access' is locked, an action is being
-;;; performed and no others should be sent.
-(define scman-intrinsic/level-access
-  (make-mutex 'allow-external-unlock))
-
 (define scman-intrinsic/action-to-perform '())
 (define scman-intrinsic/action-argument '())
 (define scman-intrinsic/action-result '())
@@ -28,11 +21,9 @@
   (syntax-rules ()
     [(_ body ...)
      (begin
-       ;; The mutex we now lock will be unlocked by C++ after the
-       ;; action to be completed is done
-       ;; (lock-mutex scman-intrinsic/level-access)
+       ;; This function call tells C++ that an action is going to be
+       ;; performed.
        (scman-internal/start-action)
-
        (scman-internal/reset-action-values)
        (begin body ...)
        '())]))
@@ -58,13 +49,13 @@
 
 (define (turn direction)
   (case direction
-    ('right
+    ((right)
      (scman-internal/perform-action
        (set! scman-intrinsic/action-to-perform 'turn-right)))
-    ('left
+    ((left)
      (scman-internal/perform-action
        (set! scman-intrinsic/action-to-perform 'turn-left)))
-    ('opposite
+    ((opposite)
      (repeat 2 (turn 'right)))
     (else (error "Cannot turn in that direction!"))))
 

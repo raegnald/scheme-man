@@ -13,6 +13,7 @@
 #include "LevelGeometry.hpp"
 #include "LevelObject.hpp"
 #include "Lisp.hpp"
+#include "SFML/Graphics/CircleShape.hpp"
 
 struct Level : public sf::Drawable {
 private:

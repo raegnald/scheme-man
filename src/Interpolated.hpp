@@ -5,8 +5,6 @@
 #include <cmath>
 #include <chrono>
 
-constexpr float PI = 3.141592653589793238462643383279502884197169399;
-
 enum Interpolating_function {
   Linear,
   Ease_out_quad,

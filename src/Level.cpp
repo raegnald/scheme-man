@@ -81,8 +81,9 @@ bool Level::load(void) {
       for (const auto &object : objects) {
         auto name = object.getName();
         auto [x, y] = object.getPosition();
-        Cannonical c = geometry.cannonical<float>(geometry.scale.getValue() *
-                                                  sf::Vector2f(x, y));
+
+        const auto p = geometry.isometricProject(sf::Vector2f(x, y));
+        const Cannonical c = geometry.cannonical<float>(p);
 
         if (name == "start") {
           player.position.setOrigin({std::round(c.x), std::round(c.y)});
@@ -127,12 +128,12 @@ bool Level::load(void) {
             }
 
             else {
-              std::println(stderr, "Unknown class name {} for tile",
-                           object_class);
+              debug std::println(stderr, "Unknown class name {} for tile",
+                                 object_class);
             }
 
           } catch (std::out_of_range _) {
-            std::println("Unknown tile ID {}", object_tile.ID);
+            debug std::println("Unknown tile ID {}", object_tile.ID);
             continue;
           }
         }

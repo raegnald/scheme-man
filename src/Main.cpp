@@ -124,9 +124,7 @@ private:
       level.setScale(level.geometry.scale.getValue() +
                      0.1 * scroll->delta);
 
-      const auto playerCenter =
-        level.geometry.isometric(level.player.position.getValue());
-      viewCenter.setOrigin(playerCenter);
+      centerPlayerInWindow(true);
     }
   }
 
@@ -200,6 +198,16 @@ private:
     }
   }
 
+  void centerPlayerInWindow(bool instantly = false) {
+    const auto player_center =
+        level.geometry.isometric(level.player.position.getValue());
+
+    if (instantly)
+      viewCenter.setOrigin(player_center);
+    else
+      viewCenter.setTarget(player_center);
+  }
+
 public:
   Game(std::filesystem::path &level_file)
       : window(sf::VideoMode(default_window_size), default_window_title),
@@ -218,6 +226,7 @@ public:
     viewCenter.setDuration(0.1);
 
     level.setScale(0.25);
+    centerPlayerInWindow(true);
   }
 
   bool running(void) { return window.isOpen(); }
@@ -232,11 +241,8 @@ public:
 
     checkGameEnd();
 
-    if (level.player.walking) {
-      const auto playerCenter =
-          level.geometry.isometric(level.player.position.getValue());
-      viewCenter.setTarget(playerCenter);
-    }
+    if (level.player.walking)
+      centerPlayerInWindow(false);
 
     level_view.setCenter(viewCenter);
 
