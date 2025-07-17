@@ -175,6 +175,7 @@ public:
   enum LookingAt { Xpos, Ypos, Xneg, Yneg };
 
   sf::Vector2f start_position;
+  LookingAt start_direction{Xpos};
 
   size_t coins_collected = 0;
   size_t meters_travelled = 0;
@@ -354,6 +355,8 @@ public:
     position.setOrigin(start_position);
     coins_collected = 0;
     meters_travelled = 0;
+    direction = start_direction;
+    needsUpdate = true;
   }
 };
 

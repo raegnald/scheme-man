@@ -125,11 +125,7 @@ private:
       if (scroll->delta * level.geometry.scale < 0)
         level.geometry.scale.stopMovement();
 
-      // level.geometry.scale.applyAcceleration(10 * scroll->delta);
-      level.setScale(level.geometry.scale.getValue() +
-                     0.1 * scroll->delta);
-
-      centerPlayerInWindow(true);
+      level.geometry.scale.applyAcceleration(10 * scroll->delta);
     }
   }
 
