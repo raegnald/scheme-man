@@ -23,6 +23,10 @@ struct LevelObject : public sf::Drawable {
   Interpolated<Cannonical> position{sf::Vector2f(0, 0)};
   LevelGeometry *geometry;
 
+  /// Name of the object that is seen by Scheme that changes depending
+  /// on the state of the object.
+  virtual std::string name(void) { return "object"; }
+
   LevelObject(void) {}
   explicit LevelObject(LevelGeometry *t_geometry) : geometry(t_geometry) {}
   explicit LevelObject(Cannonical t_position, LevelGeometry *t_geometry)
@@ -174,6 +178,8 @@ private:
 public:
   enum LookingAt { Xpos, Ypos, Xneg, Yneg };
 
+  virtual std::string name(void) final override { return "player"; }
+
   sf::Vector2f start_position;
   LookingAt start_direction{Xpos};
 
@@ -318,13 +324,18 @@ public:
     }
   }
 
+  sf::Vector2f advancePosition(sf::Vector2f pos) {
+    const auto dx = ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0);
+    const auto dy = ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0);
+    return sf::Vector2f(pos.x + dx, pos.y + dy);
+  }
+
   void walk(void) {
     needsUpdate = true;
     walking = true;
     meters_travelled++;
     position.start = position.end;
-    sf::Vector2f target(position.start.x + ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0),
-                        position.start.y + ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0));
+    sf::Vector2f target = advancePosition(position.start);
     position.setTarget(target);
   }
 
@@ -377,6 +388,10 @@ struct Collectable {
 
 struct Coin : public AnimatedObject, public Collectable {
 
+  virtual std::string name(void) final override {
+    return collected ? "" : "coin";
+  }
+
   Coin(Cannonical t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {
     setFrameDuration(0.2);
@@ -418,6 +433,10 @@ struct Coin : public AnimatedObject, public Collectable {
 };
 
 struct Star : public AnimatedObject, public Collectable {
+
+  virtual std::string name(void) final override {
+    return collected ? "" : "star";
+  }
 
   Star(sf::Vector2f t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {

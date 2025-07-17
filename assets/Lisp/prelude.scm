@@ -11,8 +11,7 @@
 
 (define (scman-internal/reset-action-values)
   (set! scman-intrinsic/action-to-perform '())
-  (set! scman-intrinsic/action-argument '())
-  (set! scman-intrinsic/action-result '()))
+  (set! scman-intrinsic/action-argument '()))
 
 (define (scman-internal/start-action)
   (scman-intrinsic/start-action))
@@ -20,13 +19,13 @@
 (define-syntax scman-internal/perform-action
   (syntax-rules ()
     [(_ body ...)
-     (begin
-       ;; This function call tells C++ that an action is going to be
-       ;; performed.
+     (when (not scman-intrinsic/game-ended-p)
+       (set! scman-intrinsic/action-result '())
        (scman-internal/start-action)
        (scman-internal/reset-action-values)
        (begin body ...)
-       '())]))
+       (scman-intrinsic/wait-for-action-completion)
+       scman-intrinsic/action-result)]))
 
 ;; State of Scheme-Man that only Scheme has to know about
 
@@ -90,3 +89,14 @@
 (define (reset-level)
   (scman-internal/perform-action
     (set! scman-intrinsic/action-to-perform 'reset-level)))
+
+(define* (see #:optional (n 1))
+  (scman-internal/perform-action
+    (set! scman-intrinsic/action-to-perform 'see)
+    (set! scman-intrinsic/action-argument n)))
+
+(define (can-walk?)
+  (not (null? (see))))
+
+(define (playing?)
+  (not scman-intrinsic/game-ended-p))

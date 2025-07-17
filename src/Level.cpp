@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <optional>
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
 #include <print>
@@ -283,4 +284,46 @@ void Level::reset(void) {
 
 void Level::shutdown(void) {
   interpreter.shutdown();
+}
+
+std::optional<std::string> Level::see(int n) {
+  const sf::Rect level_rect{{0, 0}, geometry.dimensions};
+  auto pos = player.position.end;
+
+  // Advancing
+  while (n-- > 0) {
+    pos = player.advancePosition(pos);
+
+    if (!level_rect.contains(sf::Vector2u(pos)))
+      return std::nullopt;
+  }
+
+  // Checking if there's an object at that position
+  for (const auto &object : objects) {
+    if (object->position.start == pos) {
+      return object->name();
+    }
+  }
+
+  // Checking if at least there's floor
+  for (auto &layer : map.getLayers()) {
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Floor") {
+      const auto *tile_layer =
+        dynamic_cast<const tmx::TileLayer *>(layer.get());
+      const auto &tiles = tile_layer->getTiles();
+      const auto layer_size = tile_layer->getSize();
+      const auto tile_size = map.getTileSize();
+
+      const std::uint32_t tile_id = tiles[pos.x + pos.y * layer_size.x].ID;
+
+      // There's no floor at that position
+      if (tile_id == 0)
+        return std::nullopt;
+
+      return "floor";
+    }
+  }
+
+  return std::nullopt;
 }

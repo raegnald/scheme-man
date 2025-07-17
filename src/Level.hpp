@@ -94,10 +94,14 @@ public:
   int getFloorID(Cannonical coord) const;
   bool isFloor(Cannonical coord) const;
 
-  // Resets level objects (including player)
+  /// Resets level objects (including player)
   void reset(void);
 
   void shutdown(void);
+
+  /// Returns a string identifying the object located in the Nth front
+  /// tile from the player.
+  std::optional<std::string> see(int n);
 
 private:
   bool loadTextures(void);
