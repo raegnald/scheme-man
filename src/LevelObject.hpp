@@ -5,6 +5,8 @@
 
 #include "LevelGeometry.hpp"
 #include "Interpolated.hpp"
+#include "SFML/Audio/Sound.hpp"
+#include "SFML/Audio/SoundBuffer.hpp"
 #include "debug.hpp"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/System.hpp>
@@ -388,6 +390,9 @@ struct Collectable {
 
 struct Coin : public AnimatedObject, public Collectable {
 
+  static sf::SoundBuffer coin_soundbuffer;
+  static sf::Sound coinfx;
+
   virtual std::string name(void) final override {
     return collected ? "" : "coin";
   }
@@ -416,6 +421,7 @@ struct Coin : public AnimatedObject, public Collectable {
       if (!collect())
         return;
 
+      coinfx.play();
       player.coins_collected++;
       opacity.setTarget(0);
     }

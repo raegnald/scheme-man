@@ -1,3 +1,5 @@
+(read-enable 'curly-infix)
+
 (use-modules (ice-9 threads))
 
 (display "Welcome to Scheme-Man!\n\n")
@@ -40,11 +42,16 @@
 (define-syntax repeat
   (syntax-rules ()
     ((_ n body ...)
-     ;; Unhygienic!
      (let loop ((count n))
        (when (> count 0)
          body ...
          (loop (1- count)))))))
+
+(define-syntax-rule (inc! x)
+  (set! x (1+ x)))
+
+(define-syntax-rule (dec! x)
+  (set! x (1- x)))
 
 ;; Loading a solution to a level
 
@@ -63,6 +70,9 @@
   (repeat n
     (scman-internal/perform-action
       (set! scman-intrinsic/action-to-perform 'walk))))
+
+(define-syntax-rule (walk-while cond)
+  (while cond (walk)))
 
 (define (turn direction)
   (case direction
@@ -94,6 +104,13 @@
   (scman-internal/perform-action
     (set! scman-intrinsic/action-to-perform 'see)
     (set! scman-intrinsic/action-argument n)))
+
+(define* (see? object #:optional (distance 1))
+  (let ([seen (see distance)])
+    (if (null? seen)
+        #f
+      (or (eq? seen object)
+          (see? object (1+ distance))))))
 
 (define (can-walk?)
   (not (null? (see))))
