@@ -4,14 +4,19 @@
     (when (eq? (see) 'coin)
       (dec! n))
     (walk))
-  (zero? n))
+  (when {n > 0}
+    (turn 'right)
+    (take-coins n))
+  #t)
 
 ;; Solution to level 004
 (walk-while (see? 'coin))
 (turn 'right)
 (take-coins 2)
-(with-route-as 'bifurcation
-  (simple-collect))
-(go-back-to 'birfucation)
-(turn 'right)
-(simple-collect)
+(with-route-backwards
+ (take-coins 22))
+(take-coins 2)
+(with-route-backwards
+ (take-coins 20))
+(turn 'left)
+(walk 9)

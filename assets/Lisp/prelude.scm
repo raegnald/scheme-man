@@ -1,6 +1,6 @@
 (read-enable 'curly-infix)
 
-(use-modules (ice-9 threads))
+(use-modules (ice-9 threads) (ice-9 match))
 
 (display "Welcome to Scheme-Man!\n\n")
 
@@ -29,14 +29,6 @@
        (scman-intrinsic/wait-for-action-completion)
        scman-intrinsic/action-result)]))
 
-;; State of Scheme-Man that only Scheme has to know about
-
-(define scman/solution-file '())
-
-(define (scman/evaluate-solution-file)
-  (when scman/solution-file
-    (load scman/solution-file)))
-
 ;; Nice little macros that aid in solving levels
 
 (define-syntax repeat
@@ -53,6 +45,68 @@
 (define-syntax-rule (dec! x)
   (set! x (1- x)))
 
+(define-syntax-rule (push! list x)
+  (set! list (cons x list)))
+
+(define-syntax-rule (pop! xs)
+  (let ([head (car xs)])
+    (set! xs (cdr xs))
+    head))
+
+;; Action stack and anti-actions
+
+(define scman-internal/action-stack '())
+(define scman-internal/reverting-action? #f)
+
+(define (scman-internal/push-action action)
+  (unless scman-internal/reverting-action?
+    (push! scman-internal/action-stack action)))
+
+(define (scman-internal/anti-action action)
+  (match action
+    ['(walk) '(walk 1)]
+    [`(walk ,n) `(walk ,n)]
+    ['(turn 'right) '(turn 'left)]
+    ['(turn 'left) '(turn 'right)]
+    ['(turn 'opposite) '(turn 'opposite)]
+    [`(remember-place ,name) `(remember-place ,name)]
+    ['() '()]))
+
+(define (remember-place name)
+  (scman-internal/push-action `(remember-place (quote ,name))))
+
+(define (scman-internal/reached-place-name? action place-name)
+  (match action
+    [('remember-place ,name) (eq? name place-name)]
+    [else #f]))
+
+(define (go-back-to place-name)
+  (set! scman-internal/reverting-action? #t)
+  (turn 'opposite)
+  (let revert-action ()
+    (let* ([action (pop! scman-internal/action-stack)]
+           [reached-end (scman-internal/reached-place-name? action place-name)]
+           [anti-action (scman-internal/anti-action action)])
+      (when {action and (not reached-end)}
+        (eval anti-action (interaction-environment))
+        (revert-action))))
+  (turn 'opposite)
+  (set! scman-internal/reverting-action? #f))
+
+(define-syntax-rule (with-route-backwards body ...)
+  (let ([place-name (gensym)])
+    (remember-place place-name)
+    (begin body ...)
+    (go-back-to place-name)))
+
+;; State of Scheme-Man that only Scheme has to know about
+
+(define scman-internal/solution-file '())
+
+(define (scman-internal/evaluate-solution-file)
+  (when scman-internal/solution-file
+    (load scman-internal/solution-file)))
+
 ;; Loading a solution to a level
 
 (define (solution file)
@@ -67,6 +121,7 @@
 ;; Actions
 
 (define* (walk #:optional (n 1))
+  (scman-internal/push-action `(walk ,n))
   (repeat n
     (scman-internal/perform-action
       (set! scman-intrinsic/action-to-perform 'walk))))
@@ -76,14 +131,17 @@
 
 (define (turn direction)
   (case direction
-    ((right)
+    [(right)
+     (scman-internal/push-action '(turn 'right))
      (scman-internal/perform-action
-       (set! scman-intrinsic/action-to-perform 'turn-right)))
-    ((left)
+       (set! scman-intrinsic/action-to-perform 'turn-right))]
+    [(left)
+     (scman-internal/push-action '(turn 'left))
      (scman-internal/perform-action
-       (set! scman-intrinsic/action-to-perform 'turn-left)))
-    ((opposite)
-     (repeat 2 (turn 'right)))
+       (set! scman-intrinsic/action-to-perform 'turn-left))]
+    [(opposite)
+     (scman-internal/push-action '(turn 'opposite))
+     (repeat 2 (turn 'right))]
     (else (error "Cannot turn in that direction!"))))
 
 (define (status message)
@@ -97,6 +155,7 @@
   (turn 'opposite))
 
 (define (reset-level)
+  (set! scman-internal/action-stack '())
   (scman-internal/perform-action
     (set! scman-intrinsic/action-to-perform 'reset-level)))
 
