@@ -1,5 +1,5 @@
 # Collect source files
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES "*.cpp")
 
 # Create executable
 add_executable(scman ${SOURCES})

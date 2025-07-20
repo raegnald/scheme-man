@@ -30,4 +30,4 @@ pkg_check_modules(GUILE REQUIRED IMPORTED_TARGET
 add_subdirectory(lib/tmxlite/tmxlite)
 include_directories(${TMXLITE_INCLUDE_DIR})
 
-include_directories(src)
+add_subdirectory(src)

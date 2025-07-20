@@ -3,7 +3,7 @@
 
 ## Build
 
-1. Install CMake and SFML3. On MacOS: `brew install cmake guile`
+1. Install CMake and GNU Guile. On MacOS: `brew install cmake guile`
 2. Build with CMake:
 
 ```shell
@@ -11,5 +11,5 @@ mkdir -p build && cd build
 cmake ..
 cmake --build .
 # Now test the program:
-./scman ../assets/Levels/001.tmx
+./src/scman ../assets/Levels/001.tmx
 ```

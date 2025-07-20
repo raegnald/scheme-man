@@ -239,7 +239,7 @@ public:
     currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
     view_center.setFunction(Interpolating_function::Ease_out_quad);
-    view_center.setDuration(0.1);
+    view_center.setDuration(0.1f);
 
     centerPlayerInWindow(true);
   }
@@ -259,15 +259,14 @@ public:
     // When player is moving and not visible, center the view relative
     // to its position.
     if (level.player.walking) {
-      constexpr auto margin_percentage = 0.4f;
       const sf::FloatRect view_rect(level_view.getCenter() -
-                                    level_view.getSize() * (1.0f - margin_percentage) / 2.0f,
-                                    level_view.getSize() * (1.0f - margin_percentage));
+                                        level_view.getSize() / 2.0f,
+                                    level_view.getSize());
       const bool visible = view_rect.contains(
           level.geometry.isometric(level.player.position.getValue()));
       if (!visible)
         centerPlayerInWindow();
-    }
+   }
 
     level_view.setCenter(view_center);
 

@@ -53,6 +53,16 @@
     (set! xs (cdr xs))
     head))
 
+;; Status messages
+
+(define (scman-internal/status message)
+  (scman-internal/perform-action
+    (set! scman-intrinsic/action-to-perform 'set-status)
+    (set! scman-intrinsic/action-argument message)))
+
+(define-syntax-rule (status fmt ...)
+  (scman-internal/status (format #f fmt ...)))
+
 ;; Action stack and anti-actions
 
 (define scman-internal/action-stack '())
@@ -72,15 +82,21 @@
     [`(remember-place ,name) `(remember-place ,name)]
     ['() '()]))
 
-(define (remember-place name)
-  (scman-internal/push-action `(remember-place (quote ,name))))
+(define* (remember-place name #:key (talk #t))
+  (scman-internal/perform-action
+    (set! scman-intrinsic/action-to-perform 'no-action)
+    (scman-internal/push-action `(remember-place (quote ,name))))
+  (when talk
+    (status "I'll remember ~a" name)))
 
 (define (scman-internal/reached-place-name? action place-name)
   (match action
     [('remember-place ,name) (eq? name place-name)]
     [else #f]))
 
-(define (go-back-to place-name)
+(define* (go-back-to place-name #:key (talk #t))
+  (when talk
+    (status "I'll return back to ~a" place-name))
   (set! scman-internal/reverting-action? #t)
   (turn 'opposite)
   (let revert-action ()
@@ -95,9 +111,9 @@
 
 (define-syntax-rule (with-route-backwards body ...)
   (let ([place-name (gensym)])
-    (remember-place place-name)
+    (remember-place place-name talk: #f)
     (begin body ...)
-    (go-back-to place-name)))
+    (go-back-to place-name talk: #f)))
 
 ;; State of Scheme-Man that only Scheme has to know about
 
@@ -121,9 +137,9 @@
 ;; Actions
 
 (define* (walk #:optional (n 1))
-  (scman-internal/push-action `(walk ,n))
   (repeat n
     (scman-internal/perform-action
+      (scman-internal/push-action `(walk 1))
       (set! scman-intrinsic/action-to-perform 'walk))))
 
 (define-syntax-rule (walk-while cond)
@@ -132,22 +148,16 @@
 (define (turn direction)
   (case direction
     [(right)
-     (scman-internal/push-action '(turn 'right))
      (scman-internal/perform-action
+       (scman-internal/push-action '(turn 'right))
        (set! scman-intrinsic/action-to-perform 'turn-right))]
     [(left)
-     (scman-internal/push-action '(turn 'left))
      (scman-internal/perform-action
+       (scman-internal/push-action '(turn 'left))
        (set! scman-intrinsic/action-to-perform 'turn-left))]
     [(opposite)
-     (scman-internal/push-action '(turn 'opposite))
      (repeat 2 (turn 'right))]
     (else (error "Cannot turn in that direction!"))))
-
-(define (status message)
-  (scman-internal/perform-action
-    (set! scman-intrinsic/action-to-perform 'set-status)
-    (set! scman-intrinsic/action-argument message)))
 
 (define* (go-back #:optional (n 1))
   (turn 'opposite)
