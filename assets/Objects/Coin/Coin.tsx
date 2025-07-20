@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="Coin" class="coin" tilewidth="32" tileheight="32" tilecount="10" columns="0" objectalignment="center" tilerendersize="grid" fillmode="preserve-aspect-fit">
+<tileset version="1.10" tiledversion="1.11.0" name="Coin" class="coin" tilewidth="32" tileheight="32" tilecount="10" columns="0" objectalignment="center" tilerendersize="grid" fillmode="preserve-aspect-fit">
  <grid orientation="isometric" width="1" height="1"/>
- <tile id="0">
+ <tile id="0" type="coin">
   <image source="coin01.png" width="32" height="32"/>
   <animation>
    <frame tileid="0" duration="200"/>
@@ -26,10 +26,10 @@
   <image source="coin04.png" width="32" height="32"/>
  </tile>
  <tile id="4">
-  <image source="coin05.png"/>
+  <image source="coin05.png" width="32" height="32"/>
  </tile>
  <tile id="5">
-  <image source="coin06.png"/>
+  <image source="coin06.png" width="32" height="32"/>
  </tile>
  <tile id="6">
   <image source="coin07.png" width="32" height="32"/>

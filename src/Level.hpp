@@ -14,6 +14,8 @@
 #include "LevelObject.hpp"
 #include "Lisp.hpp"
 
+constexpr auto default_level_background = sf::Color(0xd8, 0xeb, 0xf9);
+
 struct Level : public sf::Drawable {
 private:
   tmx::Map map;
@@ -32,15 +34,15 @@ public:
 
   LevelGeometry geometry;
 
-
   std::vector<sf::Texture> textures;
 
   std::vector<std::unique_ptr<LevelObject>> objects;
   Player player{&geometry};
 
+  // If not active, player has lost
   bool active = true;
 
-  sf::Color background = sf::Color(0xd8, 0xeb, 0xf9);
+  sf::Color background = default_level_background;
 
   // Level progress
   float meters_travelled{0};
@@ -88,6 +90,18 @@ public:
   }
 
   const sf::Font &getFont(void) const { return m_font; }
+
+  int getFloorID(Cannonical coord) const;
+  bool isFloor(Cannonical coord) const;
+
+  /// Resets level objects (including player)
+  void reset(void);
+
+  void shutdown(void);
+
+  /// Returns a string identifying the object located in the Nth front
+  /// tile from the player.
+  std::optional<std::string> see(int n);
 
 private:
   bool loadTextures(void);

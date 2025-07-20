@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="Star" tilewidth="32" tileheight="32" tilecount="13" columns="0" tilerendersize="grid" fillmode="preserve-aspect-fit">
+<tileset version="1.10" tiledversion="1.11.0" name="Star" class="star" tilewidth="32" tileheight="32" tilecount="13" columns="0" tilerendersize="grid" fillmode="preserve-aspect-fit">
  <grid orientation="orthogonal" width="1" height="1"/>
- <tile id="0">
+ <tile id="0" type="star">
   <image source="star01.png" width="32" height="32"/>
   <animation>
    <frame tileid="0" duration="200"/>

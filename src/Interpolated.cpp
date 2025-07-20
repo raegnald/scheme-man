@@ -1,5 +1,7 @@
 #include "Interpolated.hpp"
 
+constexpr float PI = 3.141592653589793238462643383279502884197169399;
+
 float interpolate(Interpolating_function type, float x) {
   switch (type) {
   case Linear:
@@ -12,5 +14,7 @@ float interpolate(Interpolating_function type, float x) {
            : (x == 1) ? 1
                       : pow(2, -10 * x) * sin((x * 10 - 0.75) * c4) + 1;
   }
+  case Ease_in_out_cubic:
+    return x < 0.5 ? 4 * x * x * x : 1 - std::pow(-2 * x + 2, 3) / 2;
   }
 }

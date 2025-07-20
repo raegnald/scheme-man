@@ -1,11 +1,14 @@
 #include "Level.hpp"
 #include "Interpolated.hpp"
 #include "LevelGeometry.hpp"
+#include "tmxlite/ObjectGroup.hpp"
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <memory>
+#include <optional>
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
 #include <print>
@@ -63,12 +66,46 @@ bool Level::load(void) {
 
   geometry.scale.setMinAcceleration(1);
 
-  // Load level objects
+  const auto tilesets = map.getAnimatedTiles();
+
   for (auto &layer : map.getLayers()) {
+
+    // Positions layer
+    if (layer->getType() == tmx::Layer::Type::Object &&
+        layer->getName() == "Positions") {
+
+
+      const auto *object_group =
+          dynamic_cast<const tmx::ObjectGroup *>(layer.get());
+      const auto objects = object_group->getObjects();
+
+      for (const auto &object : objects) {
+        const auto &name = object.getName();
+        auto [x, y] = object.getPosition();
+
+        if (name == "start") {
+          const auto p = geometry.isometricProject(sf::Vector2f(x, y));
+          const Cannonical c = geometry.cannonical<float>(p);
+          player.start_position = {std::round(c.x), std::round(c.y)};
+          player.position.setOrigin(player.start_position);
+
+          for (const auto &prop : object.getProperties()) {
+            const auto &name = prop.getName();
+            if (name == "lookingat") {
+              const auto &dir_str = prop.getStringValue();
+              player.direction = player.start_direction =
+                  Player::parseDirection(dir_str);
+            }
+          }
+        }
+      }
+    }
+
+    // Load level objects
     if (layer->getType() == tmx::Layer::Type::Tile &&
         layer->getName() == "Objects") {
       const auto *tile_layer =
-        dynamic_cast<const tmx::TileLayer *>(layer.get());
+          dynamic_cast<const tmx::TileLayer *>(layer.get());
       const auto &object_tiles = tile_layer->getTiles();
       const auto layer_size =
         sf::Vector2u(tile_layer->getSize().x, tile_layer->getSize().y);
@@ -80,17 +117,34 @@ bool Level::load(void) {
           Cannonical pos(x, y);
           const auto &object_tile = object_tiles[x + y * layer_size.x];
 
-          // Coin
-          if (object_tile.ID == 24) {
-            auto coin = std::make_unique<Coin>(pos, &geometry);
-            objects.push_back(std::move(coin));
-            total_coins++;
-          }
+          if (object_tile.ID == 0)
+            continue;
 
-          // Star
-          if (object_tile.ID == 11) {
-            auto coin = std::make_unique<Star>(pos, &geometry);
-            objects.push_back(std::move(coin));
+          try {
+            const auto tile = tilesets.at(object_tile.ID);
+            const auto object_class = tile.className;
+
+            // Coin
+            if (object_class == "coin") {
+              auto coin = std::make_unique<Coin>(pos, &geometry);
+              objects.push_back(std::move(coin));
+              total_coins++;
+            }
+
+            // Star
+            else if (object_class == "star") {
+              auto coin = std::make_unique<Star>(pos, &geometry);
+              objects.push_back(std::move(coin));
+            }
+
+            else {
+              debug std::println(stderr, "Unknown class name {} for tile",
+                                 object_class);
+            }
+
+          } catch (std::out_of_range _) {
+            debug std::println("Unknown tile ID {}", object_tile.ID);
+            continue;
           }
         }
       }
@@ -98,9 +152,6 @@ bool Level::load(void) {
   }
 
   debug std::println("Loaded {} level objects", objects.size());
-
-  // Make sure player is at origin
-  player.position.setOrigin(sf::Vector2f(0, 0));
 
   interpreter.initialise();
 
@@ -196,4 +247,83 @@ void Level::draw(sf::RenderTarget &target, sf::RenderStates states) const {
       target.draw(text);
     }
   }
+}
+
+
+int Level::getFloorID(Cannonical coord) const {
+  for (auto &layer : map.getLayers()) {
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Floor") {
+      const auto *tile_layer =
+        dynamic_cast<const tmx::TileLayer *>(layer.get());
+      const auto &tiles = tile_layer->getTiles();
+      const auto layer_size = tile_layer->getSize();
+
+      if (coord.x < 0 || coord.y < 0 || coord.x >= layer_size.x ||
+          coord.y >= layer_size.y)
+        return 0;
+
+      return tiles[coord.x + coord.y * layer_size.x].ID;
+    }
+  }
+
+  return 0;
+}
+
+bool Level::isFloor(Cannonical coord) const {
+  return getFloorID(coord) != 0;
+}
+
+void Level::reset(void) {
+  active = true;
+  player.reset();
+  for (auto &object : objects) {
+    object->reset();
+  }
+}
+
+void Level::shutdown(void) {
+  interpreter.shutdown();
+}
+
+std::optional<std::string> Level::see(int n) {
+  const sf::Rect level_rect{{0, 0}, geometry.dimensions};
+  auto pos = player.position.end;
+
+  // Advancing
+  while (n-- > 0) {
+    pos = player.advancePosition(pos);
+
+    if (!level_rect.contains(sf::Vector2u(pos)))
+      return std::nullopt;
+  }
+
+  // Checking if there's an object at that position
+  for (const auto &object : objects) {
+    if (object->position.start == pos) {
+      return object->name();
+    }
+  }
+
+  // Checking if at least there's floor
+  for (auto &layer : map.getLayers()) {
+    if (layer->getType() == tmx::Layer::Type::Tile &&
+        layer->getName() == "Floor") {
+      const auto *tile_layer =
+        dynamic_cast<const tmx::TileLayer *>(layer.get());
+      const auto &tiles = tile_layer->getTiles();
+      const auto layer_size = tile_layer->getSize();
+      const auto tile_size = map.getTileSize();
+
+      const std::uint32_t tile_id = tiles[pos.x + pos.y * layer_size.x].ID;
+
+      // There's no floor at that position
+      if (tile_id == 0)
+        return std::nullopt;
+
+      return "floor";
+    }
+  }
+
+  return std::nullopt;
 }

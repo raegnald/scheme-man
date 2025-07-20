@@ -30,15 +30,4 @@ pkg_check_modules(GUILE REQUIRED IMPORTED_TARGET
 add_subdirectory(lib/tmxlite/tmxlite)
 include_directories(${TMXLITE_INCLUDE_DIR})
 
-# Collect source files
-file(GLOB SOURCES "src/*.cpp")
-
-# Create executable
-add_executable(scman ${SOURCES})
-
-# Link against SFML and tmxlite
-target_link_libraries(scman PRIVATE
-  sfml-system sfml-graphics sfml-window
-  PkgConfig::GUILE
-  tmxlite
-)
+add_subdirectory(src)

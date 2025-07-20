@@ -49,19 +49,18 @@ constexpr auto window_state_file_magic = "scman";
 struct Game {
 private:
   sf::RenderWindow window;
-  sf::View view;
+  sf::View level_view, overlay_view;
 
   sf::Clock clock;
 
   sf::Vector2f oldPos;
   bool mouse_clicked = false;
-  bool gameEnd = false;
 
   Level level;
   HUD hud_overlay{&level};
 
   Interpolated<sf::Vector3f> currentBackground;
-  Interpolated<sf::Vector2f> viewCenter{sf::Vector2f(0, 0)};
+  Interpolated<sf::Vector2f> view_center{sf::Vector2f(0, 0)};
 
   void loadWindowState(void) {
     std::ifstream state(window_state_file);
@@ -80,18 +79,23 @@ private:
     state >> window_size.x;
     state >> window_size.y;
     window.setSize(window_size);
+
+    float scale;
+    if (state >> scale)
+      level.geometry.scale.setValue(scale);
   }
 
   void saveWindowState(void) const {
     std::ofstream state(window_state_file);
 
-    state << window_state_file_magic << " ";
+    const auto [x, y] = window.getPosition();
+    const auto [w, h] = window.getSize();
+    const auto scale = level.geometry.scale.getValue();
 
-    auto pos = window.getPosition();
-    state << pos.x << " " << pos.y << " ";
-
-    auto size = window.getSize();
-    state << size.x << " " << size.y;
+    state << window_state_file_magic << " "
+          << x << " " << y << " "
+          << w << " " << h << " "
+          << scale;
   }
 
   void handleMouseDrag(const std::optional<sf::Event> &event) {
@@ -108,8 +112,8 @@ private:
         const auto newPos = window.mapPixelToCoords(dragged->position);
         const auto deltaPos = oldPos - newPos;
 
-        viewCenter.setTarget(view.getCenter() + deltaPos);
-        window.setView(view);
+        view_center.setTarget(level_view.getCenter() + deltaPos);
+        window.setView(level_view);
       }
     }
   }
@@ -121,47 +125,60 @@ private:
       if (scroll->delta * level.geometry.scale < 0)
         level.geometry.scale.stopMovement();
 
-      // level.geometry.scale.applyAcceleration(10 * scroll->delta);
-      level.setScale(level.geometry.scale.getValue() +
-                     0.1 * scroll->delta);
-
-      const auto playerCenter =
-        level.geometry.isometric(level.player.position.getValue());
-      viewCenter.setOrigin(playerCenter);
+      level.geometry.scale.applyAcceleration(10 * scroll->delta);
     }
   }
 
   void handleEvents(void) {
+    // We set the view to the level in case any other views have been
+    // set, since the mouse drag and zoom actions depend on the main
+    // view (i.e. the level view) being set.
+    window.setView(level_view);
+
     while (const auto event = window.pollEvent()) {
       if (event->is<sf::Event::Closed>()) {
         saveWindowState();
+        level.shutdown();
         window.close();
       }
 
       if (const auto *resized = event->getIf<sf::Event::Resized>()) {
-        view.setSize(sf::Vector2f(resized->size));
-        window.setView(view);
+        level_view.setSize(sf::Vector2f(resized->size));
+        overlay_view.setSize(sf::Vector2f(resized->size));
+        window.setView(level_view);
       }
 
       handleMouseDrag(event);
       handleMouseScroll(event);
 
-      debug if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+      if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
         if (!key->control)
           continue;
 
         switch (key->code) {
+        case sf::Keyboard::Key::R:
+          level.reset();
+          centerPlayerInWindow(false);
+          level.setStatus("Reset level");
+          break;
+
         case sf::Keyboard::Key::Space:
-          level.player.walk();
-          level.setStatus("Walking (debug)");
+          debug {
+            level.player.walk();
+            level.setStatus("Walking (debug)");
+          }
           break;
         case sf::Keyboard::Key::C:
-          level.player.turnClockwise();
-          level.setStatus("Turning right (debug)");
+          debug {
+            level.player.turnClockwise();
+            level.setStatus("Turning right (debug)");
+          }
           break;
         case sf::Keyboard::Key::X:
-          level.player.turnAnticlockwise();
-          level.setStatus("Turning left (debug)");
+          debug {
+            level.player.turnAnticlockwise();
+            level.setStatus("Turning left (debug)");
+          }
         default:
           break;
         }
@@ -179,27 +196,40 @@ private:
   }
 
   void checkGameEnd(void) {
-    if (!gameEnd && level.player.reachedStar) {
-      gameEnd = true;
+    if (level.active && level.player.reachedStar) {
+      level.active = false;
       currentBackground.setTarget(vectorFromColor(victoryBackground));
     }
 
-    if (!gameEnd) {
+    if (level.active) {
       const auto [x, y] = level.player.position.getValue();
       const auto [w, h] = level.geometry.dimensions;
-      if (x < 0 || y < 0 || x >= w || y >= h) {
-        gameEnd = true;
+      if (x < 0 || y < 0 || x >= w || y >= h ||
+          !level.isFloor(level.player.position.end)) {
+        level.active = false;
         currentBackground.setTarget(vectorFromColor(failureBackground));
       }
     }
   }
 
+  void centerPlayerInWindow(bool instantly = false) {
+    const auto pos = level.player.position.getValue();
+    const auto player_center = level.geometry.isometric(pos);
+
+    if (instantly)
+      view_center.setOrigin(player_center);
+    else
+      view_center.setTarget(player_center);
+  }
+
 public:
   Game(std::filesystem::path &level_file)
       : window(sf::VideoMode(default_window_size), default_window_title),
-        view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
+        level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
         currentBackground(vectorFromColor(level.background)),
         level(level_file) {
+
+    level.setScale(0.25);
 
     loadWindowState();
 
@@ -208,10 +238,10 @@ public:
 
     currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
-    viewCenter.setFunction(Interpolating_function::Ease_out_quad);
-    viewCenter.setDuration(0.1);
+    view_center.setFunction(Interpolating_function::Ease_out_quad);
+    view_center.setDuration(0.1f);
 
-    level.setScale(0.25);
+    centerPlayerInWindow(true);
   }
 
   bool running(void) { return window.isOpen(); }
@@ -226,19 +256,35 @@ public:
 
     checkGameEnd();
 
+    // When player is moving and not visible, center the view relative
+    // to its position.
     if (level.player.walking) {
-      const auto playerCenter =
-          level.geometry.isometric(level.player.position.getValue());
-      viewCenter.setTarget(playerCenter);
-    }
+      const sf::FloatRect view_rect(level_view.getCenter() -
+                                        level_view.getSize() / 2.0f,
+                                    level_view.getSize());
+      const bool visible = view_rect.contains(
+          level.geometry.isometric(level.player.position.getValue()));
+      if (!visible)
+        centerPlayerInWindow();
+   }
 
-    view.setCenter(viewCenter);
+    level_view.setCenter(view_center);
+
+    // Makes the level view have the same center as the window center,
+    // plus the fact that the size is the whole window, it makes the
+    // overlay view take up all the window.
+    overlay_view.setCenter(sf::Vector2f(window.getSize()) * 0.5f);
   }
 
   void draw(void) {
     window.clear(colorFromVector(currentBackground));
-    window.setView(view);
+
+    window.setView(level_view);
     window.draw(level);
+
+    window.setView(overlay_view);
+    window.draw(hud_overlay);
+
     window.display();
   }
 };

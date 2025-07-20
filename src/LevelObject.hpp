@@ -5,6 +5,8 @@
 
 #include "LevelGeometry.hpp"
 #include "Interpolated.hpp"
+#include "SFML/Audio/Sound.hpp"
+#include "SFML/Audio/SoundBuffer.hpp"
 #include "debug.hpp"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/System.hpp>
@@ -13,6 +15,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <cstdlib>
 #include <filesystem>
+#include <print>
 #include <tmxlite/Object.hpp>
 #include <vector>
 
@@ -21,6 +24,10 @@ struct Player;
 struct LevelObject : public sf::Drawable {
   Interpolated<Cannonical> position{sf::Vector2f(0, 0)};
   LevelGeometry *geometry;
+
+  /// Name of the object that is seen by Scheme that changes depending
+  /// on the state of the object.
+  virtual std::string name(void) { return "object"; }
 
   LevelObject(void) {}
   explicit LevelObject(LevelGeometry *t_geometry) : geometry(t_geometry) {}
@@ -46,6 +53,8 @@ struct LevelObject : public sf::Drawable {
     point.setFillColor(sf::Color::Magenta);
     target.draw(point);
   };
+
+  virtual void reset(void) {}
 };
 
 struct TexturedObject : public LevelObject {
@@ -122,7 +131,7 @@ public:
     return frameTextures[currentFrameIndex].getSize();
   }
 
-  virtual void update(Player &player) override {
+  void updateAnimation(void) {
     if (frameTextures.empty())
       return;
 
@@ -140,6 +149,8 @@ public:
     }
   }
 
+  virtual void update(Player &player) override { updateAnimation(); }
+
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
     if (frameTextures.empty())
@@ -149,7 +160,8 @@ public:
 
     sprite.setPosition(getPosition());
     sprite.setOrigin(0.5f * sprite.getGlobalBounds().size);
-    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
+    if (geometry)
+      sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
 
     sprite.setColor(sf::Color(
         255, 255, 255, std::clamp(static_cast<int>(255 * opacity), 0, 255)));
@@ -168,6 +180,11 @@ private:
 public:
   enum LookingAt { Xpos, Ypos, Xneg, Yneg };
 
+  virtual std::string name(void) final override { return "player"; }
+
+  sf::Vector2f start_position;
+  LookingAt start_direction{Xpos};
+
   size_t coins_collected = 0;
   size_t meters_travelled = 0;
 
@@ -176,6 +193,16 @@ public:
   LookingAt direction{Xpos};
 
   bool needsUpdate = true;
+
+  static LookingAt parseDirection(const std::string &dir) {
+    if (dir == "+X") return Xpos;
+    if (dir == "-X") return Xneg;
+    if (dir == "+Y") return Ypos;
+    if (dir == "-Y") return Yneg;
+
+    debug std::println(stderr, "Invalid player direction {}", dir);
+    return Xpos;
+  }
 
   explicit Player(LevelGeometry *geometry)
       : AnimatedObject(geometry) {
@@ -299,13 +326,18 @@ public:
     }
   }
 
+  sf::Vector2f advancePosition(sf::Vector2f pos) {
+    const auto dx = ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0);
+    const auto dy = ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0);
+    return sf::Vector2f(pos.x + dx, pos.y + dy);
+  }
+
   void walk(void) {
     needsUpdate = true;
     walking = true;
     meters_travelled++;
     position.start = position.end;
-    sf::Vector2f target(position.start.x + ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0),
-                        position.start.y + ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0));
+    sf::Vector2f target = advancePosition(position.start);
     position.setTarget(target);
   }
 
@@ -327,8 +359,17 @@ public:
 
     const auto size = sprite.getGlobalBounds().size;
     sprite.setOrigin(sf::Vector2f(0.5 * size.x, 0.75 * size.y));
-    sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
+    if (geometry)
+      sprite.setScale(geometry->scale.getValue() * sf::Vector2f(scale, scale));
     target.draw(sprite);
+  }
+
+  void reset(void) final override {
+    position.setOrigin(start_position);
+    coins_collected = 0;
+    meters_travelled = 0;
+    direction = start_direction;
+    needsUpdate = true;
   }
 };
 
@@ -348,6 +389,13 @@ struct Collectable {
 // Specific game objects:
 
 struct Coin : public AnimatedObject, public Collectable {
+
+  static sf::SoundBuffer coin_soundbuffer;
+  static sf::Sound coinfx;
+
+  virtual std::string name(void) final override {
+    return collected ? "" : "coin";
+  }
 
   Coin(Cannonical t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {
@@ -373,6 +421,7 @@ struct Coin : public AnimatedObject, public Collectable {
       if (!collect())
         return;
 
+      coinfx.play();
       player.coins_collected++;
       opacity.setTarget(0);
     }
@@ -382,9 +431,18 @@ struct Coin : public AnimatedObject, public Collectable {
                     sf::RenderStates states) const override {
     AnimatedObject::draw(target, states);
   }
+
+  void reset(void) override {
+    collected = false;
+    opacity.setTarget(1);
+  }
 };
 
 struct Star : public AnimatedObject, public Collectable {
+
+  virtual std::string name(void) final override {
+    return collected ? "" : "star";
+  }
 
   Star(sf::Vector2f t_position, LevelGeometry *t_geometry)
       : AnimatedObject(t_position, t_geometry) {
@@ -419,5 +477,10 @@ struct Star : public AnimatedObject, public Collectable {
   virtual void draw(sf::RenderTarget &target,
                     sf::RenderStates states) const override {
     AnimatedObject::draw(target, states);
+  }
+
+  void reset(void) override {
+    collected = false;
+    opacity.setTarget(1);
   }
 };

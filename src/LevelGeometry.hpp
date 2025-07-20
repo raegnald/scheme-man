@@ -8,7 +8,7 @@
 using Cannonical = sf::Vector2f;
 using Isometric = sf::Vector2f;
 
-constexpr float min_level_scale = 0.2;
+constexpr float min_level_scale = 0.05;
 constexpr float max_level_scale = 1.5;
 
 struct LevelGeometry {

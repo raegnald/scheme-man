@@ -15,6 +15,7 @@ struct Level;
 
 SCM lisp_start_action(SCM _args_whatever);
 SCM lisp_finalise_action(SCM _args_whatever);
+SCM lisp_wait_for_action_completion(SCM _args_whatever);
 
 struct Lisp {
 private:
@@ -32,6 +33,8 @@ private:
                        (void *)lisp_start_action);
     scm_c_define_gsubr("scman-intrinsic/finalise-action", 0, 0, 0,
                        (void *)lisp_finalise_action);
+    scm_c_define_gsubr("scman-intrinsic/wait-for-action-completion", 0, 0, 0,
+                       (void *)lisp_wait_for_action_completion);
   }
 
   void m_execute_guile(void) {
@@ -52,4 +55,6 @@ public:
   }
 
   void update(Level *level);
+
+  void shutdown(void);
 };
