@@ -63,6 +63,9 @@
 (define-syntax-rule (status fmt ...)
   (scman-internal/status (format #f fmt ...)))
 
+(define (clear-status)
+  (status ""))
+
 ;; Action stack and anti-actions
 
 (define scman-internal/action-stack '())

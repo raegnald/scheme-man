@@ -13,3 +13,7 @@ cmake --build .
 # Now test the program:
 ./src/scman ../assets/Levels/001.tmx
 ```
+
+## Documentation
+
+Go to the [docs directory](./docs/).
