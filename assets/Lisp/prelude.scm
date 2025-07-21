@@ -150,11 +150,11 @@
 
 (define (turn direction)
   (case direction
-    [(right)
+    [(right r clockwise)
      (scman-internal/perform-action
        (scman-internal/push-action '(turn 'right))
        (set! scman-intrinsic/action-to-perform 'turn-right))]
-    [(left)
+    [(left l anticlockwise)
      (scman-internal/perform-action
        (scman-internal/push-action '(turn 'left))
        (set! scman-intrinsic/action-to-perform 'turn-left))]
