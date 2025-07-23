@@ -16,7 +16,7 @@
 
 constexpr auto default_level_background = sf::Color(0xd8, 0xeb, 0xf9);
 
-struct Level : public sf::Drawable {
+struct Level final : public sf::Drawable {
 private:
   tmx::Map map;
   sf::Font m_font{"../assets/Fonts/Pangolin.ttf"};

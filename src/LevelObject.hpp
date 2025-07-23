@@ -170,6 +170,67 @@ public:
   }
 };
 
+struct Direction {
+public:
+  enum Dir { Xpos, Ypos, Xneg, Yneg };
+private:
+  Dir m_direction;
+public:
+
+  Direction() : m_direction{Xpos} {}
+
+  Direction(Dir d) : m_direction{d} {}
+
+  Direction(const std::string &dir) : m_direction{Xpos} {
+    if (dir == "+X") m_direction = Xpos;
+    if (dir == "-X") m_direction = Xneg;
+    if (dir == "+Y") m_direction = Ypos;
+    if (dir == "-Y") m_direction = Yneg;
+
+    debug std::println(stderr, "Invalid player direction {}", dir);
+  }
+
+  void turnClockwise(size_t n = 1) {
+    while (n-- > 0) {
+      switch (m_direction) {
+      case Xpos:
+        m_direction = Ypos;
+        return;
+      case Ypos:
+        m_direction = Xneg;
+        return;
+      case Xneg:
+        m_direction = Yneg;
+        return;
+      case Yneg:
+        m_direction = Xpos;
+        return;
+      }
+    }
+  }
+
+  void turnAnticlockwise(size_t n = 1) {
+    while (n-- > 0) {
+      switch (m_direction) {
+      case Xpos:
+        m_direction = Yneg;
+        return;
+      case Yneg:
+        m_direction = Xneg;
+        return;
+      case Xneg:
+        m_direction = Ypos;
+        return;
+      case Ypos:
+        m_direction = Xpos;
+        return;
+      }
+    }
+  }
+
+  operator Dir() const { return m_direction; }
+};
+
 struct Player : public AnimatedObject {
 private:
   std::vector<sf::Texture> idlePos;
@@ -178,72 +239,24 @@ private:
   std::vector<sf::Texture> walkNeg;
 
 public:
-  enum LookingAt { Xpos, Ypos, Xneg, Yneg };
+
 
   virtual std::string name(void) final override { return "player"; }
 
   sf::Vector2f start_position;
-  LookingAt start_direction{Xpos};
+  Direction start_direction;
 
   size_t coins_collected = 0;
   size_t meters_travelled = 0;
 
   bool reachedStar = false;
   bool walking = false;
-  LookingAt direction{Xpos};
+  Direction lookingat;
 
   bool needsUpdate = true;
 
-  static LookingAt parseDirection(const std::string &dir) {
-    if (dir == "+X") return Xpos;
-    if (dir == "-X") return Xneg;
-    if (dir == "+Y") return Ypos;
-    if (dir == "-Y") return Yneg;
 
-    debug std::println(stderr, "Invalid player direction {}", dir);
-    return Xpos;
-  }
-
-  explicit Player(LevelGeometry *geometry)
-      : AnimatedObject(geometry) {
-
-    position.setDuration(0.25); // transition time
-    position.setFunction(Interpolating_function::Ease_out_quad);
-
-    scale = 4;
-
-    idlePos.push_back(sf::Texture("../assets/Objects/Character/idle-pos01.png"));
-    idlePos.push_back(sf::Texture("../assets/Objects/Character/idle-pos02.png"));
-
-    idleNeg.push_back(sf::Texture("../assets/Objects/Character/idle-neg01.png"));
-    idleNeg.push_back(sf::Texture("../assets/Objects/Character/idle-neg02.png"));
-
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos01.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos02.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos03.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos04.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos05.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos06.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos07.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos08.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos09.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos10.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos11.png"));
-    walkPos.push_back(sf::Texture("../assets/Objects/Character/walk-pos12.png"));
-
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg01.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg02.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg03.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg04.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg05.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg06.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg07.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg08.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg09.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg10.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg11.png"));
-    walkNeg.push_back(sf::Texture("../assets/Objects/Character/walk-neg12.png"));
-  }
+  explicit Player(LevelGeometry *geometry);
 
   void update(Player &player) override {
     if (walking && position.interpolationEnded()) {
@@ -252,7 +265,9 @@ public:
     }
 
     // Standing idle in a positive direction
-    if (needsUpdate && (direction == Xpos || direction == Ypos) && !walking) {
+    if (needsUpdate &&
+        (lookingat == Direction::Xpos || lookingat == Direction::Ypos) &&
+        !walking) {
       setFrameDuration(1);
       frameTextures = idlePos;
       currentFrameIndex = 0;
@@ -260,7 +275,9 @@ public:
     }
 
     // Walking in a positive direction
-    if (needsUpdate && (direction == Xpos || direction == Ypos) && walking) {
+    if (needsUpdate &&
+        (lookingat == Direction::Xpos || lookingat == Direction::Ypos) &&
+        walking) {
       setFrameDuration(1.0 / walkPos.size());
       frameTextures = walkPos;
       setRandomiseStartingFrame(true);
@@ -268,7 +285,9 @@ public:
     }
 
     // Standing idle in a negative direction
-    if (needsUpdate && (direction == Yneg || direction == Xneg) && !walking) {
+    if (needsUpdate &&
+        (lookingat == Direction::Yneg || lookingat == Direction::Xneg) &&
+        !walking) {
       setFrameDuration(1);
       frameTextures = idleNeg;
       currentFrameIndex = 0;
@@ -276,7 +295,9 @@ public:
     }
 
     // Walking in a negative direction
-    if (needsUpdate && (direction == Yneg || direction == Xneg) && walking) {
+    if (needsUpdate &&
+        (lookingat == Direction::Yneg || lookingat == Direction::Xneg) &&
+        walking) {
       setFrameDuration(1.0 / walkNeg.size());
       frameTextures = walkNeg;
       setRandomiseStartingFrame(true);
@@ -288,47 +309,17 @@ public:
 
   void turnClockwise(size_t n = 1) {
     needsUpdate = true;
-    while (n-- > 0) {
-      switch (direction) {
-      case Xpos:
-        direction = Ypos;
-        continue;
-      case Ypos:
-        direction = Xneg;
-        continue;
-      case Xneg:
-        direction = Yneg;
-        continue;
-      case Yneg:
-        direction = Xpos;
-        continue;
-      }
-    }
+    lookingat.turnClockwise(n);
   }
 
   void turnAnticlockwise(size_t n = 1) {
     needsUpdate = true;
-    while (n-- > 0) {
-      switch (direction) {
-      case Xpos:
-        direction = Yneg;
-        continue;
-      case Yneg:
-        direction = Xneg;
-        continue;
-      case Xneg:
-        direction = Ypos;
-        continue;
-      case Ypos:
-        direction = Xpos;
-        continue;
-      }
-    }
+    lookingat.turnAnticlockwise(n);
   }
 
   sf::Vector2f advancePosition(sf::Vector2f pos) {
-    const auto dx = ((direction == Xpos) ? 1 : (direction == Xneg) ? (-1) : 0);
-    const auto dy = ((direction == Ypos) ? 1 : (direction == Yneg) ? (-1) : 0);
+    const auto dx = ((lookingat == Direction::Xpos) ? 1 : (lookingat == Direction::Xneg) ? (-1) : 0);
+    const auto dy = ((lookingat == Direction::Ypos) ? 1 : (lookingat == Direction::Yneg) ? (-1) : 0);
     return sf::Vector2f(pos.x + dx, pos.y + dy);
   }
 
@@ -350,7 +341,7 @@ public:
     if (geometry)
       sprite.setPosition(getPosition());
 
-    if (direction == Ypos || direction == Yneg) {
+    if (lookingat == Direction::Ypos || lookingat == Direction::Yneg) {
       auto [width, height] = sprite.getGlobalBounds().size;
       const sf::IntRect rect(sf::Vector2i(width, 0),
                              sf::Vector2i(-width, height));
@@ -368,7 +359,7 @@ public:
     position.setOrigin(start_position);
     coins_collected = 0;
     meters_travelled = 0;
-    direction = start_direction;
+    lookingat = start_direction;
     needsUpdate = true;
   }
 };

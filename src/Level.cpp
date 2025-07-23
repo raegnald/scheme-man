@@ -93,8 +93,7 @@ bool Level::load(void) {
             const auto &name = prop.getName();
             if (name == "lookingat") {
               const auto &dir_str = prop.getStringValue();
-              player.direction = player.start_direction =
-                  Player::parseDirection(dir_str);
+              player.lookingat = player.start_direction = Direction(dir_str);
             }
           }
         }
