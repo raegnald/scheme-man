@@ -1,7 +1,6 @@
 #include "Level.hpp"
 #include "Interpolated.hpp"
 #include "LevelGeometry.hpp"
-#include "tmxlite/ObjectGroup.hpp"
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
@@ -9,10 +8,10 @@
 #include <cstdio>
 #include <memory>
 #include <optional>
+#include <print>
+#include <tmxlite/ObjectGroup.hpp>
 #include <tmxlite/Map.hpp>
 #include <tmxlite/TileLayer.hpp>
-#include <print>
-#include <cstddef>
 
 bool Level::loadTextures(void) {
   std::filesystem::path texturePaths[] = {

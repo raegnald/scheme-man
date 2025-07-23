@@ -114,9 +114,9 @@
 
 (define-syntax-rule (with-route-backwards body ...)
   (let ([place-name (gensym)])
-    (remember-place place-name talk: #f)
+    (remember-place place-name #:talk #f)
     (begin body ...)
-    (go-back-to place-name talk: #f)))
+    (go-back-to place-name #:talk #f)))
 
 ;; State of Scheme-Man that only Scheme has to know about
 

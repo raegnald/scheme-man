@@ -75,7 +75,8 @@
       <scm|(reset-level)>
     </cell>|<\cell>
       Resets the level the way it was first loaded but does not the state of
-      the Scheme interpreter (all the definitions are kept).
+      the Scheme interpreter (all the definitions are kept). This can also be
+      done while the window is focused by pressing <verbatim|Ctrl-R>.
     </cell>>>>
   </wide-tabular>
 
@@ -212,10 +213,3 @@
     <associate|page-medium|paper>
   </collection>
 </initial>
-
-<\references>
-  <\collection>
-    <associate|auto-1|<tuple|?|1|../../../.TeXmacs/texts/scratch/no_name_53.tm>>
-    <associate|auto-2|<tuple|?|3|../../../.TeXmacs/texts/scratch/no_name_53.tm>>
-  </collection>
-</references>

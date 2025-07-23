@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <fstream>
 #include <optional>
-#include <tmxlite/Map.hpp>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
@@ -223,6 +222,8 @@ private:
   }
 
 public:
+  Game() = delete;
+
   Game(std::filesystem::path &level_file)
       : window(sf::VideoMode(default_window_size), default_window_title),
         level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),

@@ -8,8 +8,9 @@
 
 ```shell
 mkdir -p build && cd build
-cmake ..
-cmake --build .
+cmake -DCMAKE_BUILD_TYPE=Debug ..     # or -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j8
+
 # Now test the program:
 ./src/scman ../assets/Levels/001.tmx
 ```

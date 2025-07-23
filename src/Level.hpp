@@ -7,12 +7,12 @@
 #include <memory>
 #include <optional>
 #include <print>
-#include <tmxlite/Map.hpp>
 #include <filesystem>
 #include <vector>
 #include "LevelGeometry.hpp"
 #include "LevelObject.hpp"
 #include "Lisp.hpp"
+#include <tmxlite/Map.hpp>
 
 constexpr auto default_level_background = sf::Color(0xd8, 0xeb, 0xf9);
 
@@ -47,6 +47,8 @@ public:
   // Level progress
   float meters_travelled{0};
   size_t total_coins{0};
+
+  Level() = delete;
 
   explicit Level(std::filesystem::path t_tilemap) : tilemap(t_tilemap) {
     if (!load())

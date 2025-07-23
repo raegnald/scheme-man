@@ -1,4 +1,6 @@
 build/
+debug/
+release/
 .cache/
 compile_flags.txt
 *.exe

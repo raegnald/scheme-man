@@ -32,7 +32,6 @@ public:
     static Coin icon{icon_pos, nullptr};
 
     icon.position.setOrigin(icon_pos);
-    icon.updateAnimation();
 
     // Text
     sf::Text coins_percentage{level->getFont()};

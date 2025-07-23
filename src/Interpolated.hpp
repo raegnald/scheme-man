@@ -39,7 +39,7 @@ public:
 
   Interpolating_function interp{Interpolating_function::Linear};
 
-  explicit Interpolated(T x) : start{x}, end{start} {}
+  explicit Interpolated(T origin) : start{origin}, end{start} {}
 
   void resetInterpolation(void) { m_startTime = getCurrentTime(); }
 
