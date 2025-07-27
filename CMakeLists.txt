@@ -4,16 +4,13 @@ project(SchemeMan LANGUAGES CXX)
 # Enable compile_commands.json for tooling
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# SFML
+# SFML graphics library
 add_subdirectory(lib/sfml)
 
-find_package(PkgConfig REQUIRED)
+# s7 scheme interpreter
+add_subdirectory(lib/s7)
 
-# Find Guile using pkg-config
-pkg_check_modules(GUILE REQUIRED IMPORTED_TARGET
-  guile-3.0)
-
-# tmxlite package
+# tmxlite Tiled Maps Editor file format parser
 add_subdirectory(lib/tmxlite/tmxlite)
 include_directories(${TMXLITE_INCLUDE_DIR})
 
