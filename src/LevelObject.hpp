@@ -39,8 +39,10 @@ struct LevelObject : public sf::Drawable, public Resettable {
       : position{t_start_position}, start_position{t_start_position},
         geometry{t_geometry}, frames{t_first_frame_path} {}
 
-  /// Name of the object that is seen by Scheme that changes depending
-  /// on the state of the object.
+  // The name of the object seen by Scheme. This name may change
+  // depending on the state of the level object. It should not contain
+  // spaces; replace them with hyphens. All characters should be
+  // lowercase.
   virtual std::string name(void) const { return "object"; }
 
   virtual void update(Player &player) { frames.update(); }

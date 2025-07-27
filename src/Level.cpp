@@ -73,7 +73,6 @@ bool Level::load(void) {
     if (layer->getType() == tmx::Layer::Type::Object &&
         layer->getName() == "Positions") {
 
-
       const auto *object_group =
           dynamic_cast<const tmx::ObjectGroup *>(layer.get());
       const auto objects = object_group->getObjects();
@@ -102,6 +101,7 @@ bool Level::load(void) {
     // Load level objects
     if (layer->getType() == tmx::Layer::Type::Tile &&
         layer->getName() == "Objects") {
+
       const auto *tile_layer =
           dynamic_cast<const tmx::TileLayer *>(layer.get());
       const auto &object_tiles = tile_layer->getTiles();
