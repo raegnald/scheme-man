@@ -1,9 +1,11 @@
 // An abstraction to initialise, manage a Lisp interpreter
-// (specifically GNU Guile Scheme) and interact with the game logic in
-// C++.
+// (specifically s7 scheme) and interact with the game logic in C++.
 
 #pragma once
 
+#include <iostream>
+#include <print>
+#include <ostream>
 #include <s7.h>
 #include <thread>
 
@@ -15,11 +17,12 @@ struct Level;
 
 struct Lisp {
 private:
-  std::thread m_guile_thread;
+  std::thread m_s7_thread;
+  s7_scheme *s7{nullptr};
 
   // SCM m_action_symbol, m_action_arg, m_action_result, m_game_ended_p;
 
-  void m_bind_scman_guile_values(void) {
+  void m_bind_scman_s7_values(void) {
     // m_action_symbol = scm_c_lookup("scman-intrinsic/action-to-perform");
     // m_action_arg    = scm_c_lookup("scman-intrinsic/action-argument");
     // m_action_result = scm_c_lookup("scman-intrinsic/action-result");
@@ -33,20 +36,38 @@ private:
     //                    (void *)lisp_wait_for_action_completion);
   }
 
-  void m_execute_guile(void) {
-    // scm_init_guile();
-    // scm_c_primitive_load("../assets/Lisp/prelude.scm");
-    m_bind_scman_guile_values();
-    // scm_shell(0, NULL);
+  void m_s7_shell(void) {
+    std::string str;
+    s7_pointer val;
+
+    while (true) {
+      std::print("> ");
+      if (!std::getline(std::cin, str))
+        break;
+
+      val = s7_eval_c_string(s7, str.c_str());
+
+      std::println("{}", s7_object_to_c_string(s7, val));
+    }
+
+    free(s7);
+  }
+
+  void m_start_s7(void) {
+    s7 = s7_init();
+    s7_load(s7, "../assets/Lisp/prelude.scm");
+    m_bind_scman_s7_values();
+
+    m_s7_shell();
   }
 
 public:
   void initialise(void) {
-    if (m_guile_thread.joinable())
+    if (m_s7_thread.joinable())
       return;
 
-    m_guile_thread = std::thread([this]() { this->m_execute_guile(); });
-    m_guile_thread.detach();
+    m_s7_thread = std::thread([this]() { this->m_start_s7(); });
+    m_s7_thread.detach();
   }
 
   void update(Level *level);

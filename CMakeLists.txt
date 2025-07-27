@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(SchemeMan LANGUAGES CXX)
+project(SchemeMan LANGUAGES C CXX)
 
 # Enable compile_commands.json for tooling
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
