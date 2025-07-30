@@ -3,74 +3,36 @@
 
 #pragma once
 
-#include <iostream>
-#include <print>
-#include <ostream>
+#include <condition_variable>
+#include <functional>
+#include <queue>
 #include <s7.h>
+#include <print>
 #include <thread>
 
 struct Level;
 
-// SCM lisp_start_action(SCM _args_whatever);
-// SCM lisp_finalise_action(SCM _args_whatever);
-// SCM lisp_wait_for_action_completion(SCM _args_whatever);
-
 struct Lisp {
+  using Task = std::function<void()>;
+
 private:
-  std::thread m_s7_thread;
-  s7_scheme *s7{nullptr};
+  s7_scheme              *s7{nullptr};
+  std::thread             m_s7_thread;
+  std::queue<Task>        m_tasks;
+  std::mutex              m_task_mutex;
+  std::condition_variable m_task_cv;
+  bool                    m_running = true;
 
-  // SCM m_action_symbol, m_action_arg, m_action_result, m_game_ended_p;
+  static const char *m_playing, *m_action_symbol, *m_action_arg,
+      *m_action_result;
 
-  void m_bind_scman_s7_values(void) {
-    // m_action_symbol = scm_c_lookup("scman-intrinsic/action-to-perform");
-    // m_action_arg    = scm_c_lookup("scman-intrinsic/action-argument");
-    // m_action_result = scm_c_lookup("scman-intrinsic/action-result");
-    // m_game_ended_p  = scm_c_lookup("scman-intrinsic/game-ended-p");
-
-    // scm_c_define_gsubr("scman-intrinsic/start-action", 0, 0, 0,
-    //                    (void *)lisp_start_action);
-    // scm_c_define_gsubr("scman-intrinsic/finalise-action", 0, 0, 0,
-    //                    (void *)lisp_finalise_action);
-    // scm_c_define_gsubr("scman-intrinsic/wait-for-action-completion", 0, 0, 0,
-    //                    (void *)lisp_wait_for_action_completion);
-  }
-
-  void m_s7_shell(void) {
-    std::string str;
-    s7_pointer val;
-
-    while (true) {
-      std::print("> ");
-      if (!std::getline(std::cin, str))
-        break;
-
-      val = s7_eval_c_string(s7, str.c_str());
-
-      std::println("{}", s7_object_to_c_string(s7, val));
-    }
-
-    free(s7);
-  }
-
-  void m_start_s7(void) {
-    s7 = s7_init();
-    s7_load(s7, "../assets/Lisp/prelude.scm");
-    m_bind_scman_s7_values();
-
-    m_s7_shell();
-  }
+  void m_define_scman_s7_values(void);
+  void m_start_s7(void);
 
 public:
-  void initialise(void) {
-    if (m_s7_thread.joinable())
-      return;
-
-    m_s7_thread = std::thread([this]() { this->m_start_s7(); });
-    m_s7_thread.detach();
-  }
-
-  void update(Level *level);
-
+  void initialise(void);
   void shutdown(void);
+
+  void enqueue(Task t);
+  void update(Level *level);
 };

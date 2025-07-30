@@ -1,10 +1,13 @@
+// The state of the game
+
+#pragma once
+
 #include <SFML/Config.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
-#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <optional>
@@ -15,22 +18,10 @@
 #include "Level.hpp"
 #include "LevelObject.hpp"
 #include "HUD.hpp"
-
-static_assert(SFML_VERSION_MAJOR == 3, "SFML version 3 required");
-static_assert(__cplusplus >= 202302L, "Use C++23 or later");
+#include "color.hpp"
 
 constexpr auto victoryBackground = sf::Color(0xd9, 0xf9, 0xdf);
 constexpr auto failureBackground = sf::Color(0xf2, 0xc0, 0xb0);
-
-sf::Vector3f vectorFromColor(sf::Color color) {
-  return (1.0f / 255) * sf::Vector3f(color.r, color.g, color.b);
-}
-
-sf::Color colorFromVector(sf::Vector3f v) {
-  return sf::Color(std::clamp(static_cast<int>(255 * v.x), 0, 255),
-                   std::clamp(static_cast<int>(255 * v.y), 0, 255),
-                   std::clamp(static_cast<int>(255 * v.z), 0, 255));
-}
 
 constexpr sf::Vector2u default_window_size{600, 450};
 constexpr sf::Vector2u minimum_window_size{300, 225};
@@ -289,22 +280,3 @@ public:
     window.display();
   }
 };
-
-int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    std::println(stderr, "Error: No level file given.");
-    std::println(stderr, "Usage:");
-    std::println(stderr, "  {} path/to/level/file.tmx", argv[0]);
-    return EXIT_FAILURE;
-  }
-
-  std::filesystem::path level_file = argv[1];
-  Game game{level_file};
-
-  while (game.running()) {
-    game.update();
-    game.draw();
-  }
-
-  return EXIT_SUCCESS;
-}
