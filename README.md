@@ -5,7 +5,7 @@
 
 1. Install CMake.
   - On MacOS: `brew install cmake`
-  - On Debian systems: `brew install cmake`
+  - On Debian systems: `apt install cmake`
 2. Fetch submodules:
 ```shell
 git submodule update --init --recursive --rebase --force --depth=1
