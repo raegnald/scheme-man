@@ -224,7 +224,6 @@ public:
     loadWindowState();
 
     window.setVerticalSyncEnabled(true);
-    window.setMinimumSize(minimum_window_size);
 
     currentBackground.setFunction(Interpolating_function::Ease_out_quad);
 
