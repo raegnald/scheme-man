@@ -18,13 +18,11 @@
 #include "Level.hpp"
 #include "LevelObject.hpp"
 #include "HUD.hpp"
+#include "SFML/Window/WindowHandle.hpp"
 #include "color.hpp"
 
-constexpr auto victoryBackground = sf::Color(0xd9, 0xf9, 0xdf);
-constexpr auto failureBackground = sf::Color(0xf2, 0xc0, 0xb0);
-
-constexpr sf::Vector2u default_window_size{600, 450};
-constexpr sf::Vector2u minimum_window_size{300, 225};
+constexpr auto victory_background = sf::Color(0xd9, 0xf9, 0xdf);
+constexpr auto failure_background = sf::Color(0xf2, 0xc0, 0xb0);
 
 constexpr auto default_window_title =
 #if defined __DEBUG__
@@ -188,7 +186,7 @@ private:
   void checkGameEnd(void) {
     if (level.active && level.player.reachedStar) {
       level.active = false;
-      currentBackground.setTarget(vectorFromColor(victoryBackground));
+      currentBackground.setTarget(vectorFromColor(victory_background));
     }
 
     if (level.active) {
@@ -197,7 +195,7 @@ private:
       if (x < 0 || y < 0 || x >= w || y >= h ||
           !level.isFloor(level.player.position.end)) {
         level.active = false;
-        currentBackground.setTarget(vectorFromColor(failureBackground));
+        currentBackground.setTarget(vectorFromColor(failure_background));
       }
     }
   }
@@ -215,8 +213,8 @@ private:
 public:
   Game() = delete;
 
-  Game(std::filesystem::path &level_file)
-      : window(sf::VideoMode(default_window_size), default_window_title),
+  Game(sf::WindowHandle handle, const std::filesystem::path &level_file)
+      : window(handle),
         level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
         currentBackground(vectorFromColor(level.background)),
         level(level_file) {
