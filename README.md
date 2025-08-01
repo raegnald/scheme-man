@@ -3,14 +3,23 @@
 
 ## Build
 
-1. Install CMake.
-  - On MacOS: `brew install cmake`
-  - On Debian systems: `apt install cmake`
-2. Fetch submodules:
+1. Initialise submodules:
+
 ```shell
 git submodule update --init --recursive --rebase --force --depth=1
 ```
-3. Build with CMake:
+
+2. Install CMake.
+  - On MacOS: `brew install cmake`
+  - On Debian systems: `apt install cmake`
+
+3. Fetch submodules:
+
+```shell
+git submodule update --init --recursive --rebase --force --depth=1
+```
+
+4. Build with CMake:
 
 ```shell
 mkdir -p build && cd build

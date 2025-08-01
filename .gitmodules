@@ -4,3 +4,6 @@
 [submodule "lib/sfml"]
 	path = lib/sfml
 	url = https://github.com/SFML/SFML
+[submodule "lib/wxWidgets"]
+	path = lib/wxWidgets
+	url = https://github.com/wxWidgets/wxWidgets
