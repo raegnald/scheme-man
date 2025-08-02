@@ -1,14 +1,16 @@
 #pragma once
 
 #include <wx/wx.h>
-#include "wxSFMLControl.hpp"
+#include "Level.hpp"
+#include "wxSchemeMan.hpp"
 
 class MainFrame : public wxFrame {
 public:
   MainFrame();
 
 private:
-  wxSFMLControl *m_canvas;
+  wxSchemeMan *m_canvas;
+  Level *level;
 
   void OnHello(wxCommandEvent& event);
   void OnExit(wxCommandEvent& event);

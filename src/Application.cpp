@@ -1,7 +1,12 @@
 #include "Application.hpp"
-#include "wxSFMLControl.hpp"
+#include "wx/gdicmn.h"
+#include "wx/richtext/richtextbuffer.h"
 #include "wxSchemeMan.hpp"
-#include <memory>
+#include <wx/wx.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/splitter.h>
+#include <wx/textctrl.h>
 
 bool Application::OnInit() {
   auto frame = new MainFrame;
@@ -29,15 +34,54 @@ void MainFrame::setMenus(void) {
 MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
   setMenus();
 
-  wxPanel* panel = new wxPanel(this);
-  wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+  // Create the wxSplitterWindow window and set a minimum pane size to
+  // prevent unsplitting
+  wxSplitterWindow *splitterWindow = new wxSplitterWindow(this, wxID_ANY);
+  splitterWindow->SetMinimumPaneSize(300);
+
+  wxPanel *left_panel = new wxPanel(splitterWindow, wxID_ANY);
+  wxPanel *right_panel = new wxPanel(splitterWindow, wxID_ANY);
+
 
   m_canvas =
-      new wxSchemeMan(panel, wxID_ANY, wxPoint(10, 10), wxSize(200, 200));
-  // m_canvas->SetMaxSize(wxSize(200, 200));
+    new wxSchemeMan(right_panel, wxID_ANY, wxPoint(10, 10), wxSize(200, 200));
+  level = m_canvas->game.getLevel();
 
-  sizer->Add(m_canvas, 1, wxEXPAND | wxALL, 0);
-  panel->SetSizer(sizer);
+  // Scheme text input
+  wxTextCtrl *textCtrl1 =
+    new wxTextCtrl(left_panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+                   wxTE_MULTILINE);
+  textCtrl1->SetHint("Type expression, press Ctrl+Enter...");
+  textCtrl1->Bind(wxEVT_CHAR_HOOK, [this, textCtrl1](wxKeyEvent &event) {
+    if ((event.GetKeyCode() == WXK_RETURN ||
+         event.GetKeyCode() == WXK_NUMPAD_ENTER) &&
+        event.ControlDown()) {
+      const auto content = std::string(textCtrl1->GetValue());
+      std::println("Contents are {}", content);
+      level->evaluateScheme(content);
+    } else {
+      event.Skip();
+    }
+  });
+  wxBoxSizer *panel1Sizer = new wxBoxSizer(wxHORIZONTAL);
+  panel1Sizer->Add(textCtrl1, 1, wxEXPAND);
+  left_panel->SetSizer(panel1Sizer);
+
+
+  // Game visualisation panel
+  wxBoxSizer *panel2Sizer = new wxBoxSizer(wxHORIZONTAL);
+  panel2Sizer->Add(m_canvas, 1, wxEXPAND | wxALL, 0);
+  right_panel->SetSizer(panel2Sizer);
+
+
+  splitterWindow->SplitVertically(left_panel, right_panel);
+
+
+  // Set up the sizer for the frame and resize the frame according to
+  // its contents
+  wxBoxSizer *topSizer = new wxBoxSizer(wxHORIZONTAL);
+  topSizer->Add(splitterWindow, 1, wxEXPAND);
+  SetSizerAndFit(topSizer);
 
   CreateStatusBar();
   SetStatusText("Welcome to wxWidgets!");

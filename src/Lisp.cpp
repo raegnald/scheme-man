@@ -155,3 +155,7 @@ void Lisp::m_start_s7(void) {
 
   s7_quit(s7);
 }
+
+void Lisp::evaluate(const std::string &expr) {
+  enqueue([this, expr]() { s7_eval_c_string(s7, expr.c_str()); });
+}

@@ -86,101 +86,13 @@ private:
           << scale;
   }
 
-  void handleMouseDrag(const std::optional<sf::Event> &event) {
-    if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>()) {
-      mouse_clicked = true;
-      oldPos = window.mapPixelToCoords(mouse->position);
-    }
-
-    if (event->is<sf::Event::MouseButtonReleased>())
-      mouse_clicked = false;
-
-    if (mouse_clicked) {
-      if (const auto *dragged = event->getIf<sf::Event::MouseMoved>()) {
-        const auto newPos = window.mapPixelToCoords(dragged->position);
-        const auto deltaPos = oldPos - newPos;
-
-        view_center.setTarget(level_view.getCenter() + deltaPos);
-        window.setView(level_view);
-      }
-    }
-  }
-
-  void handleMouseScroll(const std::optional<sf::Event> &event) {
-    if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>()) {
-      // Reset acceleration when scrolling in different direction so
-      // that it feels more snappy
-      if (scroll->delta * level.geometry.scale < 0)
-        level.geometry.scale.stopMovement();
-
-      level.geometry.scale.applyAcceleration(10 * scroll->delta);
-    }
-  }
-
-  void handleEvents(void) {
-    // We set the view to the level in case any other views have been
-    // set, since the mouse drag and zoom actions depend on the main
-    // view (i.e. the level view) being set.
-    window.setView(level_view);
-
-    while (const auto event = window.pollEvent()) {
-      if (event->is<sf::Event::Closed>()) {
-        saveWindowState();
-        level.shutdown();
-        window.close();
-      }
-
-      if (const auto *resized = event->getIf<sf::Event::Resized>()) {
-        level_view.setSize(sf::Vector2f(resized->size));
-        overlay_view.setSize(sf::Vector2f(resized->size));
-        window.setView(level_view);
-      }
-
-      handleMouseDrag(event);
-      handleMouseScroll(event);
-
-      if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
-        if (!key->control)
-          continue;
-
-        switch (key->code) {
-        case sf::Keyboard::Key::R:
-          level.reset();
-          centerPlayerInWindow(false);
-          level.setStatus("Reset level");
-          break;
-
-        case sf::Keyboard::Key::Space:
-          debug {
-            level.player.walk();
-            level.setStatus("Walking (debug)");
-          }
-          break;
-        case sf::Keyboard::Key::C:
-          debug {
-            level.player.turnClockwise();
-            level.setStatus("Turning right (debug)");
-          }
-          break;
-        case sf::Keyboard::Key::X:
-          debug {
-            level.player.turnAnticlockwise();
-            level.setStatus("Turning left (debug)");
-          }
-        default:
-          break;
-        }
-      }
-    }
-  }
-
   void updateWindowTitle(void) {
-    window.setTitle(
-        std::format("{} [{}% coins] [{} metres] [player at {}, {}]",
-                    default_window_title,
-                    hud_overlay.coinsPercentage(), hud_overlay.getMeters(),
-                    level.player.position.end.x,
-                    level.player.position.end.y));
+    // window.setTitle(
+    //     std::format("{} [{}% coins] [{} metres] [player at {}, {}]",
+    //                 default_window_title,
+    //                 hud_overlay.coinsPercentage(), hud_overlay.getMeters(),
+    //                 level.player.position.end.x,
+    //                 level.player.position.end.y));
   }
 
   void checkGameEnd(void) {
@@ -233,11 +145,112 @@ public:
     centerPlayerInWindow(true);
   }
 
+  Level *getLevel(void) { return &level; }
+
+  void setMouseClicked(bool clicked) { mouse_clicked = clicked; }
+
+  void setMousePosition(sf::Vector2i position) {
+    oldPos = window.mapPixelToCoords(position);
+  }
+
+  void handleMouseDrag(const std::optional<sf::Event> &event) {
+    if (!mouse_clicked)
+      return;
+
+    if (const auto *dragged = event->getIf<sf::Event::MouseMoved>()) {
+      const auto newPos = window.mapPixelToCoords(dragged->position);
+      const auto deltaPos = oldPos - newPos;
+
+      view_center.setTarget(level_view.getCenter() + deltaPos);
+      window.setView(level_view);
+    }
+  }
+
+  void handleMouseScroll(int delta) {
+    // Reset acceleration when scrolling in different direction so
+    // that it feels more snappy
+    if (delta * level.geometry.scale < 0)
+      level.geometry.scale.stopMovement();
+
+    level.geometry.scale.applyAcceleration(10 * delta);
+  }
+
+  void close(void) {
+    saveWindowState();
+    level.shutdown();
+    window.close();
+  }
+
+  void handleEvents(void) {
+    // We set the view to the level in case any other views have been
+    // set, since the mouse drag and zoom actions depend on the main
+    // view (i.e. the level view) being set.
+    window.setView(level_view);
+
+    while (const auto event = window.pollEvent()) {
+      if (event->is<sf::Event::Closed>())
+        close();
+
+      if (const auto *resized = event->getIf<sf::Event::Resized>()) {
+        level_view.setSize(sf::Vector2f(resized->size));
+        overlay_view.setSize(sf::Vector2f(resized->size));
+        window.setView(level_view);
+      }
+
+      if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>())
+        handleMouseScroll(scroll->delta);
+
+      if (const auto *click = event->getIf<sf::Event::MouseButtonPressed>()) {
+        setMouseClicked(true);
+        setMousePosition(click->position);
+      }
+
+      if (event->is<sf::Event::MouseButtonReleased>())
+        setMouseClicked(false);
+
+      if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>())
+        handleMouseDrag(event);
+
+      if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+        if (!key->control)
+          continue;
+
+        switch (key->code) {
+        case sf::Keyboard::Key::R:
+          level.reset();
+          centerPlayerInWindow(false);
+          level.setStatus("Reset level");
+          break;
+
+        case sf::Keyboard::Key::Space:
+          debug {
+            level.player.walk();
+            level.setStatus("Walking (debug)");
+          }
+          break;
+        case sf::Keyboard::Key::C:
+          debug {
+            level.player.turnClockwise();
+            level.setStatus("Turning right (debug)");
+          }
+          break;
+        case sf::Keyboard::Key::X:
+          debug {
+            level.player.turnAnticlockwise();
+            level.setStatus("Turning left (debug)");
+          }
+        default:
+          break;
+        }
+      }
+    }
+  }
+
   bool running(void) { return window.isOpen(); }
 
   void update(void) {
     handleEvents();
-    updateWindowTitle();
+    // updateWindowTitle();
 
     // Update level
     const auto elapsed = clock.restart().asSeconds();

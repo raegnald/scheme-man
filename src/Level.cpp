@@ -1,6 +1,7 @@
 #include "Level.hpp"
 #include "Interpolated.hpp"
 #include "LevelGeometry.hpp"
+#include "s7.h"
 #include <SFML/System.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
@@ -324,4 +325,8 @@ std::optional<std::string> Level::see(int n) {
   }
 
   return std::nullopt;
+}
+
+void Level::evaluateScheme(const std::string &expr) {
+  interpreter.evaluate(expr);
 }

@@ -22,6 +22,10 @@ public:
   virtual void Frame(sf::RenderWindow &window) = 0;
   void Render(void);
 
+  virtual void OnScroll(wxMouseEvent& event) {}
+  virtual void OnMotion(wxMouseEvent& event) {}
+  virtual void OnClose(wxCloseEvent& event) {}
+
 private:
   sf::RenderWindow *m_sfml_window;
   bool m_window_initialised = false;

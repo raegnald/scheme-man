@@ -35,4 +35,6 @@ public:
 
   void enqueue(Task t);
   void update(Level *level);
+
+  void evaluate(const std::string &expr);
 };

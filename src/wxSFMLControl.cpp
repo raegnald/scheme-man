@@ -1,5 +1,7 @@
 #include "wxSFMLControl.hpp"
 #include "SFML/Window/WindowHandle.hpp"
+#include "wx/event.h"
+#include <print>
 #include <tuple>
 
 #ifdef __WXGTK__
@@ -18,6 +20,9 @@ wxSFMLControl::wxSFMLControl(wxWindow *parent, wxWindowID id,
   Bind(wxEVT_TIMER, &wxSFMLControl::OnRenderTimer, this);
   Bind(wxEVT_SHOW, &wxSFMLControl::OnShow, this);
   Bind(wxEVT_SIZE, &wxSFMLControl::OnSize, this);
+  Bind(wxEVT_MOUSEWHEEL, &wxSFMLControl::OnScroll, this);
+  Bind(wxEVT_MOTION, &wxSFMLControl::OnMotion, this);
+  Bind(wxEVT_CLOSE_WINDOW, &wxSFMLControl::OnClose, this);
 }
 
 wxSFMLControl::~wxSFMLControl(void) {

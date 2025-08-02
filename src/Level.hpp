@@ -105,6 +105,8 @@ public:
   /// tile from the player.
   std::optional<std::string> see(int n);
 
+  void evaluateScheme(const std::string &expr);
+
 private:
   bool loadTextures(void);
 };
