@@ -2,7 +2,6 @@
 #include "Lisp.hpp"
 #include "wx/font.h"
 #include "wx/gdicmn.h"
-#include "wx/gtk/colour.h"
 #include "wxSchemeMan.hpp"
 #include <wx/wx.h>
 #include <wx/panel.h>
