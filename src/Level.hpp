@@ -27,9 +27,9 @@ private:
   bool m_status_permanent{false};
   static constexpr float m_status_duration = 5.0; // in seconds
 
+public:
   Lisp interpreter;
 
-public:
   std::filesystem::path tilemap;
 
   LevelGeometry geometry;

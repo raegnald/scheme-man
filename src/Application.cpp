@@ -1,12 +1,15 @@
 #include "Application.hpp"
+#include "Lisp.hpp"
+#include "wx/font.h"
 #include "wx/gdicmn.h"
-#include "wx/richtext/richtextbuffer.h"
+#include "wx/gtk/colour.h"
 #include "wxSchemeMan.hpp"
 #include <wx/wx.h>
 #include <wx/panel.h>
 #include <wx/sizer.h>
 #include <wx/splitter.h>
 #include <wx/textctrl.h>
+#include <wx/richtext/richtextctrl.h>
 
 bool Application::OnInit() {
   auto frame = new MainFrame;
@@ -31,56 +34,128 @@ void MainFrame::setMenus(void) {
   SetMenuBar(menuBar);
 }
 
-MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
-  setMenus();
-
-  // Create the wxSplitterWindow window and set a minimum pane size to
-  // prevent unsplitting
-  wxSplitterWindow *splitterWindow = new wxSplitterWindow(this, wxID_ANY);
-  splitterWindow->SetMinimumPaneSize(300);
-
-  wxPanel *left_panel = new wxPanel(splitterWindow, wxID_ANY);
-  wxPanel *right_panel = new wxPanel(splitterWindow, wxID_ANY);
-
-
-  m_canvas =
-    new wxSchemeMan(right_panel, wxID_ANY, wxPoint(10, 10), wxSize(200, 200));
-  level = m_canvas->game.getLevel();
-
-  // Scheme text input
-  wxTextCtrl *textCtrl1 =
-    new wxTextCtrl(left_panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+wxTextCtrl *MainFrame::schemeTextCtrl(wxWindow *parent) {
+  wxTextCtrl *text_ctrl =
+    new wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
                    wxTE_MULTILINE);
-  textCtrl1->SetHint("Type expression, press Ctrl+Enter...");
-  textCtrl1->Bind(wxEVT_CHAR_HOOK, [this, textCtrl1](wxKeyEvent &event) {
+
+  text_ctrl->SetHint("Type expression, press Ctrl+Enter...");
+
+#if defined __WXCOCOA__
+  textCtrl1->OSXDisableAllSmartSubstitutions();
+#endif
+
+  wxFont font(12, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+  text_ctrl->SetFont(font);
+
+  text_ctrl->Bind(wxEVT_CHAR_HOOK, [this, text_ctrl](wxKeyEvent &event) {
     if ((event.GetKeyCode() == WXK_RETURN ||
          event.GetKeyCode() == WXK_NUMPAD_ENTER) &&
         event.ControlDown()) {
-      const auto content = std::string(textCtrl1->GetValue());
-      std::println("Contents are {}", content);
+      const auto content = text_ctrl->GetValue().ToStdString();
       level->evaluateScheme(content);
     } else {
       event.Skip();
     }
   });
+
+  return text_ctrl;
+}
+
+wxPanel *MainFrame::interpreterOutputPanel(wxWindow *parent) {
+  wxPanel *panel = new wxPanel(parent, wxID_ANY);
+
+  wxRichTextCtrl *richTextCtrl = new wxRichTextCtrl(
+      panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, 200),
+      wxVSCROLL | wxHSCROLL | wxBORDER_NONE | wxWANTS_CHARS);
+
+  wxFont mono_font{12, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL,
+                   wxFONTWEIGHT_NORMAL};
+
+  richTextCtrl->SetFont(mono_font);
+  richTextCtrl->BeginSuppressUndo();
+  richTextCtrl->BeginParagraphSpacing(0, 20);
+
+  level->interpreter.setLogCallback([richTextCtrl](const Lisp_log &log) {
+    wxString text = wxString::FromUTF8(log.message);
+
+    richTextCtrl->CallAfter([richTextCtrl, text](void) {
+      richTextCtrl->AppendText("\n");
+      richTextCtrl->AppendText(text);
+      richTextCtrl->ShowPosition(richTextCtrl->GetLastPosition());
+    });
+  });
+
+  wxBoxSizer *panel1Sizer = new wxBoxSizer(wxHORIZONTAL);
+  panel1Sizer->Add(richTextCtrl, 1, wxEXPAND);
+  panel->SetSizer(panel1Sizer);
+
+  return panel;
+}
+
+wxPanel *MainFrame::interpreterInputPanel(wxWindow *parent) {
+  wxPanel *interpreter_panel = new wxPanel(parent, wxID_ANY);
+  interpreter_panel->SetSize({200, 200});
+
+  // Scheme text input
+  wxTextCtrl *textCtrl1 = schemeTextCtrl(interpreter_panel);
   wxBoxSizer *panel1Sizer = new wxBoxSizer(wxHORIZONTAL);
   panel1Sizer->Add(textCtrl1, 1, wxEXPAND);
-  left_panel->SetSizer(panel1Sizer);
+  interpreter_panel->SetSizer(panel1Sizer);
 
+  return interpreter_panel;
+}
 
-  // Game visualisation panel
+wxPanel *MainFrame::interpreterPanel(wxWindow *parent) {
+  wxPanel *panel = new wxPanel(parent, wxID_ANY);
+
+  wxSplitterWindow *interpreter_splitter =
+      new wxSplitterWindow(panel, wxID_ANY);
+  interpreter_splitter->SetMinimumPaneSize(100);
+
+  wxPanel *output_panel = interpreterOutputPanel(interpreter_splitter);
+  wxPanel *input_panel = interpreterInputPanel(interpreter_splitter);
+
+  interpreter_splitter->SplitHorizontally(output_panel, input_panel);
+
+  wxBoxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+  sizer->Add(interpreter_splitter, 1, wxEXPAND);
+  panel->SetSizer(sizer);
+
+  return panel;
+}
+
+wxPanel *MainFrame::schemeManPanel(wxWindow *parent) {
+  wxPanel *game_panel = new wxPanel(parent, wxID_ANY);
+
+  m_canvas = new wxSchemeMan(game_panel, wxID_ANY, wxDefaultPosition,
+                             wxSize(200, 400));
+  level = m_canvas->game.getLevel();
+
   wxBoxSizer *panel2Sizer = new wxBoxSizer(wxHORIZONTAL);
   panel2Sizer->Add(m_canvas, 1, wxEXPAND | wxALL, 0);
-  right_panel->SetSizer(panel2Sizer);
+  game_panel->SetSizer(panel2Sizer);
 
+  return game_panel;
+}
 
-  splitterWindow->SplitVertically(left_panel, right_panel);
+MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
+  setMenus();
 
+  // Create the wxSplitterWindow window and set a minimum pane size to
+  // prevent unsplitting
+  wxSplitterWindow *main_splitter = new wxSplitterWindow(this, wxID_ANY);
+  main_splitter->SetMinimumPaneSize(300);
+
+  wxPanel *right_panel = schemeManPanel(main_splitter);
+  wxPanel *left_panel = interpreterPanel(main_splitter);
+
+  main_splitter->SplitVertically(left_panel, right_panel);
 
   // Set up the sizer for the frame and resize the frame according to
   // its contents
   wxBoxSizer *topSizer = new wxBoxSizer(wxHORIZONTAL);
-  topSizer->Add(splitterWindow, 1, wxEXPAND);
+  topSizer->Add(main_splitter, 1, wxEXPAND);
   SetSizerAndFit(topSizer);
 
   CreateStatusBar();

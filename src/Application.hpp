@@ -17,6 +17,14 @@ private:
   void OnAbout(wxCommandEvent& event);
 
   void setMenus(void);
+
+  wxPanel *interpreterPanel(wxWindow *parent);
+
+  wxPanel *interpreterInputPanel(wxWindow *parent);
+  wxPanel *interpreterOutputPanel(wxWindow *parent);
+
+  wxPanel *schemeManPanel(wxWindow *parent);
+  wxTextCtrl *schemeTextCtrl(wxWindow *parent);
 };
 
 class Application : public wxApp {

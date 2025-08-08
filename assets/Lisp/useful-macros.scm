@@ -24,6 +24,14 @@
 
 ;; Looping macros
 
+(define-macro (while condition . body)
+  (let ((loop (gensym "while"))
+        (exp (cadr condition)))
+    `(let ,loop ()
+       (when ,condition
+         ,@body
+         (,loop)))))
+
 (define-macro (while-let bind . body)
   (let ((loop (gensym "loop"))
         (var (car bind))
@@ -34,9 +42,10 @@
          (,loop ,exp)))))
 
 (define-macro (repeat n . body)
-  (let ((loop  (gensym "loop"))
-        (count (gensym "count")))
-    `(let ,loop ((,count ,n))
-        (when (> ,count 0)
-          ,@body
-          (,loop (- ,count 1))))))
+  (let ((count (gensym "count"))
+        (loop  (gensym "loop")))
+    `(letrec ((,loop (lambda (,count)
+                       (when (> ,count 0)
+                         ,@body
+                         (,loop (- ,count 1))))))
+       (,loop ,n))))
