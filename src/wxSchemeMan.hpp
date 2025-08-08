@@ -12,11 +12,9 @@ public:
   Game game;
 
   wxSchemeMan(wxWindow *parent, wxWindowID id, const wxPoint &pos,
-              const wxSize &size)
+              const wxSize &size, const std::filesystem::path level_path)
       : wxSFMLControl(parent, id, pos, size),
-        game(GetWindowHandle(),
-             std::filesystem::path("../assets/Levels/001.tmx")) {}
-  // TODO: Enable dynamic loading of levels ^^^^
+        game(GetWindowHandle(), level_path) {}
 
   void Frame(sf::RenderWindow &window) override {
     game.update();

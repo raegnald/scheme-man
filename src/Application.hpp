@@ -6,9 +6,11 @@
 
 class MainFrame : public wxFrame {
 public:
-  MainFrame();
+  MainFrame(void) = delete;
+  MainFrame(std::filesystem::path level_path);
 
 private:
+  std::filesystem::path level_path;
   wxSchemeMan *m_canvas;
   Level *level;
 

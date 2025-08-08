@@ -17,6 +17,8 @@ public:
                 const wxSize &size);
   ~wxSFMLControl(void);
 
+  wxSize DoGetBestSize() const override { return GetClientSize(); }
+
   sf::WindowHandle GetWindowHandle(void);
 
   virtual void Frame(sf::RenderWindow &window) = 0;

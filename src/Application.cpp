@@ -3,6 +3,8 @@
 #include "wx/font.h"
 #include "wx/gdicmn.h"
 #include "wxSchemeMan.hpp"
+#include <filesystem>
+#include <format>
 #include <wx/wx.h>
 #include <wx/panel.h>
 #include <wx/sizer.h>
@@ -11,7 +13,20 @@
 #include <wx/richtext/richtextctrl.h>
 
 bool Application::OnInit() {
-  auto frame = new MainFrame;
+  std::filesystem::path tmxPath;
+  wxFileDialog dlg(nullptr, "Open TMX map…", wxEmptyString, wxEmptyString,
+                   "Tiled maps (*.tmx)|*.tmx",
+                   wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+  while (dlg.ShowModal() == wxID_CANCEL) {
+    // Optionally warn them that a file is required:
+    wxMessageBox("You must select a .tmx file to continue.", "No file selected",
+                 wxICON_WARNING);
+  }
+
+  tmxPath = std::string(dlg.GetPath());
+
+  auto frame = new MainFrame{tmxPath};
   frame->Show(true);
   return true;
 }
@@ -35,13 +50,13 @@ void MainFrame::setMenus(void) {
 
 wxTextCtrl *MainFrame::schemeTextCtrl(wxWindow *parent) {
   wxTextCtrl *text_ctrl =
-    new wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
-                   wxTE_MULTILINE);
+      new wxTextCtrl(parent, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+                     wxTE_MULTILINE | wxBORDER_NONE);
 
   text_ctrl->SetHint("Type expression, press Ctrl+Enter...");
 
-#if defined __WXCOCOA__
-  textCtrl1->OSXDisableAllSmartSubstitutions();
+#if defined __WXOSX_COCOA__
+  text_ctrl->OSXDisableAllSmartSubstitutions();
 #endif
 
   wxFont font(12, wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
@@ -62,7 +77,8 @@ wxTextCtrl *MainFrame::schemeTextCtrl(wxWindow *parent) {
 }
 
 wxPanel *MainFrame::interpreterOutputPanel(wxWindow *parent) {
-  wxPanel *panel = new wxPanel(parent, wxID_ANY);
+  wxPanel *panel = new wxPanel(parent, wxID_ANY, wxDefaultPosition,
+                               wxDefaultSize, wxBORDER_NONE);
 
   wxRichTextCtrl *richTextCtrl = new wxRichTextCtrl(
       panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, 200),
@@ -93,7 +109,8 @@ wxPanel *MainFrame::interpreterOutputPanel(wxWindow *parent) {
 }
 
 wxPanel *MainFrame::interpreterInputPanel(wxWindow *parent) {
-  wxPanel *interpreter_panel = new wxPanel(parent, wxID_ANY);
+  wxPanel *interpreter_panel = new wxPanel(parent, wxID_ANY, wxDefaultPosition,
+                                           wxDefaultSize, wxBORDER_NONE);
   interpreter_panel->SetSize({200, 200});
 
   // Scheme text input
@@ -110,7 +127,9 @@ wxPanel *MainFrame::interpreterPanel(wxWindow *parent) {
 
   wxSplitterWindow *interpreter_splitter =
       new wxSplitterWindow(panel, wxID_ANY);
+
   interpreter_splitter->SetMinimumPaneSize(100);
+  interpreter_splitter->SetWindowStyle(wxSP_LIVE_UPDATE | wxSP_NOBORDER);
 
   wxPanel *output_panel = interpreterOutputPanel(interpreter_splitter);
   wxPanel *input_panel = interpreterInputPanel(interpreter_splitter);
@@ -128,7 +147,8 @@ wxPanel *MainFrame::schemeManPanel(wxWindow *parent) {
   wxPanel *game_panel = new wxPanel(parent, wxID_ANY);
 
   m_canvas = new wxSchemeMan(game_panel, wxID_ANY, wxDefaultPosition,
-                             wxSize(200, 400));
+                             wxDefaultSize, level_path);
+
   level = m_canvas->game.getLevel();
 
   wxBoxSizer *panel2Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -138,13 +158,18 @@ wxPanel *MainFrame::schemeManPanel(wxWindow *parent) {
   return game_panel;
 }
 
-MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
+MainFrame::MainFrame(std::filesystem::path level_path)
+    : wxFrame(NULL, wxID_ANY,
+              std::format("Scheme-Man — {}", std::string(level_path))),
+      level_path{std::move(level_path)} {
   setMenus();
 
   // Create the wxSplitterWindow window and set a minimum pane size to
   // prevent unsplitting
   wxSplitterWindow *main_splitter = new wxSplitterWindow(this, wxID_ANY);
+
   main_splitter->SetMinimumPaneSize(300);
+  main_splitter->SetWindowStyle(wxSP_LIVE_UPDATE | wxSP_NOBORDER);
 
   wxPanel *right_panel = schemeManPanel(main_splitter);
   wxPanel *left_panel = interpreterPanel(main_splitter);
@@ -158,7 +183,7 @@ MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
   SetSizerAndFit(topSizer);
 
   CreateStatusBar();
-  SetStatusText("Welcome to wxWidgets!");
+  SetStatusText("Welcome to Scheme-Man!");
 
   Bind(wxEVT_MENU, &MainFrame::OnHello, this, ID_Hello);
   Bind(wxEVT_MENU, &MainFrame::OnAbout, this, wxID_ABOUT);
@@ -168,10 +193,10 @@ MainFrame::MainFrame() : wxFrame(NULL, wxID_ANY, "Hello World") {
 void MainFrame::OnExit(wxCommandEvent &event) { Close(true); }
 
 void MainFrame::OnAbout(wxCommandEvent &event) {
-  wxMessageBox("This is a wxWidgets Hello World example", "About Hello World",
+  wxMessageBox("(scheme-man (forever (fan-club)))", "About Scheme-Man",
                wxOK | wxICON_INFORMATION);
 }
 
 void MainFrame::OnHello(wxCommandEvent &event) {
-  wxLogMessage("Hello world from wxWidgets!");
+  wxLogMessage("Hello!");
 }
