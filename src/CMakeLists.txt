@@ -17,7 +17,8 @@ add_executable(scman ${SOURCES})
 
 # Link against SFML and tmxlite
 target_link_libraries(scman PRIVATE
-  sfml-system sfml-graphics sfml-window sfml-audio
+  wx::core wx::base wx::richtext
+  SFML::System SFML::Graphics SFML::Window SFML::Audio
   s7
   tmxlite
 )

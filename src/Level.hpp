@@ -27,9 +27,9 @@ private:
   bool m_status_permanent{false};
   static constexpr float m_status_duration = 5.0; // in seconds
 
+public:
   Lisp interpreter;
 
-public:
   std::filesystem::path tilemap;
 
   LevelGeometry geometry;
@@ -104,6 +104,8 @@ public:
   /// Returns a string identifying the object located in the Nth front
   /// tile from the player.
   std::optional<std::string> see(int n);
+
+  void evaluateScheme(const std::string &expr);
 
 private:
   bool loadTextures(void);

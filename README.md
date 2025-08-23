@@ -1,24 +1,28 @@
-
 # Scheme-Man
 
 ## Build
 
-1. Install CMake.
-  - On MacOS: `brew install cmake`
-  - On Debian systems: `apt install cmake`
-2. Fetch submodules:
+1. Install CMake (and optionally Ninja).
+  - On MacOS: `brew install cmake ninja`
+  - On Debian systems: `apt install cmake ninja-build`
+
+2. Install [vcpkg](https://vcpkg.io).
+
+3. Fetch submodules:
+
 ```shell
 git submodule update --init --recursive --rebase --force --depth=1
 ```
-3. Build with CMake:
+
+4. Build with CMake:
 
 ```shell
 mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..     # or -DCMAKE_BUILD_TYPE=Release (default)
-cmake --build . -j8
+time cmake -S .. -B . -G Ninja --preset=vcpkg -DCMAKE_BUILD_TYPE=Debug ..     # or -DCMAKE_BUILD_TYPE=Release (default)
+cmake --build .
 
 # Now test the program:
-./src/scman ../assets/Levels/001.tmx
+./src/scman
 ```
 
 ## Documentation

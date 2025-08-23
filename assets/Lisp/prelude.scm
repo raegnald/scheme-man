@@ -1,10 +1,16 @@
-(display "Welcome to Scheme-Man!\n\n")
-
 (set! *load-path*
       (cons (getenv "PWD")
             *load-path*))
 
 (load "useful-macros.scm")
+
+(define-macro (log type . format)
+  `(scman:receive-log ,type (format #f ,@format)))
+
+(set! (hook-functions *error-hook*)
+      (list (lambda (hook)
+              (log 'error "Error: ~a"
+                   (apply format #f (hook 'data))))))
 
 ;; Checking that all intrinsic variables are bound
 (let ((intrinsic-variables
@@ -14,8 +20,8 @@
          scman:action-result)))
   (while-let (variable-name (pop! intrinsic-variables))
     (unless (defined? variable-name)
-      (format *stderr* "Intrinsic variable ~a is not bound"
-              variable-name)
+      (log 'error "Intrinsic variable ~a is not bound"
+           variable-name)
       (exit #f))))
 
 (define (scman:reset-action-values)
@@ -126,8 +132,13 @@
 ;; Actions
 
 (define* (walk (steps 1))
+  (log 'normal "Going to walk ~a" steps)
+  (display "Going to walk")
+
   (repeat steps
+    (log 'normal "In repeat")
     (scman:perform-action
+      (log 'normal "In perform action")
       (scman:push-action `(walk 1))
       (set! scman:action-to-perform 'walk))))
 

@@ -6,12 +6,15 @@
 #include "Level.hpp"
 #include "s7.h"
 
-const char *Lisp::m_playing       = "scman:playing?",
+const char *Lisp::m_playing = "scman:playing?",
            *Lisp::m_action_symbol = "scman:action-to-perform",
-           *Lisp::m_action_arg    = "scman:action-argument",
+           *Lisp::m_action_arg = "scman:action-argument",
            *Lisp::m_action_result = "scman:action-result";
 
 std::mutex performing_action;
+
+std::function<void (const Lisp_log &log)> Lisp::log_callback{nullptr};
+std::mutex Lisp::log_callback_mutex;
 
 void Lisp::initialise(void) {
   if (m_s7_thread.joinable())
@@ -113,6 +116,26 @@ s7_pointer lisp_wait_for_action_completion(s7_scheme *sc, s7_pointer args) {
   return s7_unspecified(sc);
 }
 
+s7_pointer Lisp::receive_log(s7_scheme *sc, s7_pointer args) {
+  std::string type_s = s7_symbol_name(s7_car(args));
+  std::string message = s7_string(s7_cadr(args));
+  Lisp_log::Type type{Lisp_log::Normal};
+
+  if (type_s == "error")
+    type = Lisp_log::Error;
+
+  Lisp_log log{type, message};
+
+  if (log_callback) {
+    callLogCallbackIfSet(log);
+  } else {
+    std::println(type == Lisp_log::Error ? stderr : stdout, "Lisp: {}",
+                 message);
+  }
+
+  return s7_unspecified(sc);
+}
+
 void Lisp::m_define_scman_s7_values(void) {
   s7_define_variable(s7, m_playing, s7_t(s7));
   s7_define_variable(s7, m_action_symbol, s7_nil(s7));
@@ -128,6 +151,8 @@ void Lisp::m_define_scman_s7_values(void) {
                      lisp_wait_for_action_completion, 0, 0, false,
                      "Stop execution of the Scheme code until the action is "
                      "performed by C++");
+  s7_define_function(s7, "scman:receive-log", Lisp::receive_log, 2, 0, false,
+                     "Receive a log message from Scheme");
 }
 
 void Lisp::m_start_s7(void) {
@@ -154,4 +179,8 @@ void Lisp::m_start_s7(void) {
   }
 
   s7_quit(s7);
+}
+
+void Lisp::evaluate(const std::string &expr) {
+  enqueue([this, expr]() { s7_eval_c_string(s7, expr.c_str()); });
 }

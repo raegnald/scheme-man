@@ -18,13 +18,11 @@
 #include "Level.hpp"
 #include "LevelObject.hpp"
 #include "HUD.hpp"
+#include "SFML/Window/WindowHandle.hpp"
 #include "color.hpp"
 
-constexpr auto victoryBackground = sf::Color(0xd9, 0xf9, 0xdf);
-constexpr auto failureBackground = sf::Color(0xf2, 0xc0, 0xb0);
-
-constexpr sf::Vector2u default_window_size{600, 450};
-constexpr sf::Vector2u minimum_window_size{300, 225};
+constexpr auto victory_background = sf::Color(0xd9, 0xf9, 0xdf);
+constexpr auto failure_background = sf::Color(0xf2, 0xc0, 0xb0);
 
 constexpr auto default_window_title =
 #if defined __DEBUG__
@@ -88,35 +86,99 @@ private:
           << scale;
   }
 
-  void handleMouseDrag(const std::optional<sf::Event> &event) {
-    if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>()) {
-      mouse_clicked = true;
-      oldPos = window.mapPixelToCoords(mouse->position);
+  void updateWindowTitle(void) {
+    // window.setTitle(
+    //     std::format("{} [{}% coins] [{} metres] [player at {}, {}]",
+    //                 default_window_title,
+    //                 hud_overlay.coinsPercentage(), hud_overlay.getMeters(),
+    //                 level.player.position.end.x,
+    //                 level.player.position.end.y));
+  }
+
+  void checkGameEnd(void) {
+    if (level.active && level.player.reachedStar) {
+      level.active = false;
+      currentBackground.setTarget(vectorFromColor(victory_background));
     }
 
-    if (event->is<sf::Event::MouseButtonReleased>())
-      mouse_clicked = false;
-
-    if (mouse_clicked) {
-      if (const auto *dragged = event->getIf<sf::Event::MouseMoved>()) {
-        const auto newPos = window.mapPixelToCoords(dragged->position);
-        const auto deltaPos = oldPos - newPos;
-
-        view_center.setTarget(level_view.getCenter() + deltaPos);
-        window.setView(level_view);
+    if (level.active) {
+      const auto [x, y] = level.player.position.getValue();
+      const auto [w, h] = level.geometry.dimensions;
+      if (x < 0 || y < 0 || x >= w || y >= h ||
+          !level.isFloor(level.player.position.end)) {
+        level.active = false;
+        currentBackground.setTarget(vectorFromColor(failure_background));
       }
     }
   }
 
-  void handleMouseScroll(const std::optional<sf::Event> &event) {
-    if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>()) {
-      // Reset acceleration when scrolling in different direction so
-      // that it feels more snappy
-      if (scroll->delta * level.geometry.scale < 0)
-        level.geometry.scale.stopMovement();
+  void centerPlayerInWindow(bool instantly = false) {
+    const auto pos = level.player.position.getValue();
+    const auto player_center = level.geometry.isometric(pos);
 
-      level.geometry.scale.applyAcceleration(10 * scroll->delta);
+    if (instantly)
+      view_center.setOrigin(player_center);
+    else
+      view_center.setTarget(player_center);
+  }
+
+public:
+  Game() = delete;
+
+  Game(sf::WindowHandle handle, const std::filesystem::path &level_file)
+      : window(handle),
+        level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
+        currentBackground(vectorFromColor(level.background)),
+        level(level_file) {
+
+    level.setScale(0.25);
+
+    loadWindowState();
+
+    window.setVerticalSyncEnabled(true);
+
+    currentBackground.setFunction(Interpolating_function::Ease_out_quad);
+
+    view_center.setFunction(Interpolating_function::Ease_out_quad);
+    view_center.setDuration(0.1f);
+
+    centerPlayerInWindow(true);
+  }
+
+  Level *getLevel(void) { return &level; }
+
+  void setMouseClicked(bool clicked) { mouse_clicked = clicked; }
+
+  void setMousePosition(sf::Vector2i position) {
+    oldPos = window.mapPixelToCoords(position);
+  }
+
+  void handleMouseDrag(const std::optional<sf::Event> &event) {
+    if (!mouse_clicked)
+      return;
+
+    if (const auto *dragged = event->getIf<sf::Event::MouseMoved>()) {
+      const auto newPos = window.mapPixelToCoords(dragged->position);
+      const auto deltaPos = oldPos - newPos;
+
+      view_center.setTarget(level_view.getCenter() + deltaPos);
+      window.setView(level_view);
     }
+  }
+
+  void handleMouseScroll(int delta) {
+    // Reset acceleration when scrolling in different direction so
+    // that it feels more snappy
+    if (delta * level.geometry.scale < 0)
+      level.geometry.scale.stopMovement();
+
+    level.geometry.scale.applyAcceleration(10 * delta);
+  }
+
+  void close(void) {
+    saveWindowState();
+    level.shutdown();
+    window.close();
   }
 
   void handleEvents(void) {
@@ -126,11 +188,8 @@ private:
     window.setView(level_view);
 
     while (const auto event = window.pollEvent()) {
-      if (event->is<sf::Event::Closed>()) {
-        saveWindowState();
-        level.shutdown();
-        window.close();
-      }
+      if (event->is<sf::Event::Closed>())
+        close();
 
       if (const auto *resized = event->getIf<sf::Event::Resized>()) {
         level_view.setSize(sf::Vector2f(resized->size));
@@ -138,8 +197,19 @@ private:
         window.setView(level_view);
       }
 
-      handleMouseDrag(event);
-      handleMouseScroll(event);
+      if (const auto *scroll = event->getIf<sf::Event::MouseWheelScrolled>())
+        handleMouseScroll(scroll->delta);
+
+      if (const auto *click = event->getIf<sf::Event::MouseButtonPressed>()) {
+        setMouseClicked(true);
+        setMousePosition(click->position);
+      }
+
+      if (event->is<sf::Event::MouseButtonReleased>())
+        setMouseClicked(false);
+
+      if (const auto *mouse = event->getIf<sf::Event::MouseButtonPressed>())
+        handleMouseDrag(event);
 
       if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
         if (!key->control)
@@ -176,71 +246,11 @@ private:
     }
   }
 
-  void updateWindowTitle(void) {
-    window.setTitle(
-        std::format("{} [{}% coins] [{} metres] [player at {}, {}]",
-                    default_window_title,
-                    hud_overlay.coinsPercentage(), hud_overlay.getMeters(),
-                    level.player.position.end.x,
-                    level.player.position.end.y));
-  }
-
-  void checkGameEnd(void) {
-    if (level.active && level.player.reachedStar) {
-      level.active = false;
-      currentBackground.setTarget(vectorFromColor(victoryBackground));
-    }
-
-    if (level.active) {
-      const auto [x, y] = level.player.position.getValue();
-      const auto [w, h] = level.geometry.dimensions;
-      if (x < 0 || y < 0 || x >= w || y >= h ||
-          !level.isFloor(level.player.position.end)) {
-        level.active = false;
-        currentBackground.setTarget(vectorFromColor(failureBackground));
-      }
-    }
-  }
-
-  void centerPlayerInWindow(bool instantly = false) {
-    const auto pos = level.player.position.getValue();
-    const auto player_center = level.geometry.isometric(pos);
-
-    if (instantly)
-      view_center.setOrigin(player_center);
-    else
-      view_center.setTarget(player_center);
-  }
-
-public:
-  Game() = delete;
-
-  Game(std::filesystem::path &level_file)
-      : window(sf::VideoMode(default_window_size), default_window_title),
-        level_view(sf::Vector2f(0, 0), sf::Vector2f(window.getSize())),
-        currentBackground(vectorFromColor(level.background)),
-        level(level_file) {
-
-    level.setScale(0.25);
-
-    loadWindowState();
-
-    window.setVerticalSyncEnabled(true);
-    window.setMinimumSize(minimum_window_size);
-
-    currentBackground.setFunction(Interpolating_function::Ease_out_quad);
-
-    view_center.setFunction(Interpolating_function::Ease_out_quad);
-    view_center.setDuration(0.1f);
-
-    centerPlayerInWindow(true);
-  }
-
   bool running(void) { return window.isOpen(); }
 
   void update(void) {
     handleEvents();
-    updateWindowTitle();
+    // updateWindowTitle();
 
     // Update level
     const auto elapsed = clock.restart().asSeconds();
